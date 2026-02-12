@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finorix Pro - Account Status</title>
+    <link rel="icon" href="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff1493">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Finorix Pro">
+    <link rel="apple-touch-icon" href="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --pink: #ff1493;
+            --pink-light: #ff69b4;
+            --pink-dark: #c71585;
+            --green: #00e676;
+            --green-dark: #00c853;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #2a0a1a 30%, #1a0a1a 70%, #0a0a0a 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: gradientShift 20s ease infinite;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background: linear-gradient(135deg, #0a0a0a 0%, #2a0a1a 30%, #1a0a1a 70%, #0a0a0a 100%); }
+            50% { background: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 30%, #2a0a1a 70%, #0a0a0a 100%); }
+        }
+
+        .trading-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, var(--pink) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-100px) translateX(50px); opacity: 0.6; }
+        }
+
+        /* Loading spinner */
+        .loading-container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255, 20, 147, 0.2);
+            border-top: 4px solid var(--pink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+        }
+
+        /* Main container */
+        .subscription-container {
+            position: relative;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.95), rgba(42, 10, 26, 0.95));
+            padding: 50px 40px;
+            border-radius: 20px;
+            border: 3px solid var(--pink);
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 550px;
+            z-index: 1;
+            animation: borderGlow 8s infinite alternate;
+            display: none;
+        }
+
+        .subscription-container.show { display: block; }
+
+        @keyframes borderGlow {
+            0% { border-color: var(--pink); box-shadow: 0 0 40px rgba(255, 20, 147, 0.4); }
+            50% { border-color: var(--pink-light); box-shadow: 0 0 40px rgba(255, 105, 180, 0.4); }
+            100% { border-color: var(--pink-dark); box-shadow: 0 0 40px rgba(199, 21, 133, 0.4); }
+        }
+
+        /* Active state - green border */
+        .subscription-container.active-state {
+            border-color: var(--green);
+            box-shadow: 0 0 30px rgba(0, 230, 118, 0.3);
+            animation: borderGlowGreen 8s infinite alternate;
+        }
+
+        @keyframes borderGlowGreen {
+            0% { border-color: var(--green); box-shadow: 0 0 40px rgba(0, 230, 118, 0.4); }
+            50% { border-color: #69f0ae; box-shadow: 0 0 40px rgba(105, 240, 174, 0.4); }
+            100% { border-color: var(--green-dark); box-shadow: 0 0 40px rgba(0, 200, 83, 0.4); }
+        }
+
+        .subscription-logo {
+            width: 100px; height: 100px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.6);
+        }
+
+        .status-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .subscription-container h1 {
+            margin: 20px 0;
+            font-size: 32px;
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
+        }
+
+        .pending-title { color: var(--pink); }
+        .active-title { color: var(--green); text-shadow: 0 0 20px rgba(0, 230, 118, 0.6) !important; }
+
+        .subscription-container h2 {
+            margin: 15px 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 20px;
+        }
+
+        .subscription-container p {
+            margin: 20px 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .user-email {
+            display: inline-block;
+            background: rgba(255, 20, 147, 0.15);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 14px;
+            color: var(--pink-light);
+            margin-bottom: 15px;
+        }
+
+        /* Pending section */
+        .contact-info {
+            background: rgba(255, 20, 147, 0.1);
+            border: 2px solid rgba(255, 20, 147, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .contact-info h3 {
+            color: var(--pink);
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .contact-info p {
+            font-size: 15px;
+            margin: 10px 0;
+        }
+
+        .telegram-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #0088cc, #006699);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 900;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .telegram-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 136, 204, 0.6);
+        }
+
+        /* Active section */
+        .active-info {
+            background: rgba(0, 230, 118, 0.08);
+            border: 2px solid rgba(0, 230, 118, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .active-info h3 {
+            color: var(--green);
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .active-info p {
+            font-size: 15px;
+            margin: 10px 0;
+        }
+
+        .signal-btn {
+            display: inline-block;
+            padding: 18px 50px;
+            background: linear-gradient(135deg, var(--green), var(--green-dark));
+            color: #000;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            letter-spacing: 1px;
+            animation: signalPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes signalPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 230, 118, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(0, 230, 118, 0.8); }
+        }
+
+        .signal-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(0, 230, 118, 0.7);
+        }
+
+        .expiry-badge {
+            display: inline-block;
+            background: rgba(255, 165, 0, 0.15);
+            border: 1px solid rgba(255, 165, 0, 0.4);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #ffa726;
+            margin-top: 15px;
+        }
+
+        /* Countdown Timer */
+        .countdown-container {
+            margin-top: 20px;
+        }
+
+        .countdown-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .countdown-timer {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .countdown-unit {
+            background: rgba(0, 230, 118, 0.08);
+            border: 1px solid rgba(0, 230, 118, 0.25);
+            border-radius: 12px;
+            padding: 12px 10px;
+            min-width: 70px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .countdown-unit:hover {
+            border-color: rgba(0, 230, 118, 0.5);
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.15);
+        }
+
+        .countdown-value {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--green);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .countdown-name {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 6px;
+        }
+
+        /* Urgent countdown (less than 1 hour) */
+        .countdown-urgent .countdown-unit {
+            background: rgba(255, 50, 50, 0.1);
+            border-color: rgba(255, 50, 50, 0.35);
+        }
+
+        .countdown-urgent .countdown-value {
+            color: #ff5555;
+            animation: urgentBlink 1s ease-in-out infinite;
+        }
+
+        /* Warning countdown (less than 1 day) */
+        .countdown-warning .countdown-unit {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: rgba(255, 165, 0, 0.35);
+        }
+
+        .countdown-warning .countdown-value {
+            color: #ffa726;
+        }
+
+        @keyframes urgentBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .countdown-expired {
+            color: #ff5555;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 15px;
+            background: rgba(255, 50, 50, 0.1);
+            border: 1px solid rgba(255, 50, 50, 0.3);
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        /* Bottom links */
+        .bottom-actions {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .action-link {
+            color: var(--pink);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .action-link:hover {
+            color: var(--pink-light);
+            text-shadow: 0 0 10px rgba(255, 20, 147, 0.5);
+        }
+
+        /* Popup */
+        .popup-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .popup-overlay.show { display: flex; }
+
+        .popup-modal {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.98), rgba(42, 10, 26, 0.98));
+            border: 3px solid var(--pink);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
+            text-align: center;
+            animation: popupSlideIn 0.4s ease-out;
+        }
+
+        @keyframes popupSlideIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .popup-icon { font-size: 60px; margin-bottom: 20px; }
+        .popup-title { font-size: 26px; font-weight: 900; color: var(--pink); margin-bottom: 20px; }
+        .popup-message { font-size: 16px; color: rgba(255, 255, 255, 0.85); margin-bottom: 30px; line-height: 1.8; }
+
+        .popup-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+        }
+
+        .popup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 20, 147, 0.6);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Account Number */
+        .account-number-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 20, 147, 0.08);
+            border: 1px solid rgba(255, 20, 147, 0.25);
+            border-radius: 10px;
+            padding: 8px 18px;
+            margin-bottom: 12px;
+        }
+
+        .account-number-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .account-number-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--pink-light);
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .copy-btn {
+            background: rgba(255, 20, 147, 0.2);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            color: var(--pink-light);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 20, 147, 0.4);
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.3);
+        }
+
+        .copy-btn.copied {
+            background: rgba(0, 230, 118, 0.2);
+            border-color: rgba(0, 230, 118, 0.4);
+            color: var(--green);
+        }
+
+        @media (max-width: 768px) {
+            .subscription-container { padding: 40px 25px; }
+            .subscription-container h1 { font-size: 26px; }
+            .subscription-container h2 { font-size: 18px; }
+            .signal-btn { padding: 15px 40px; font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="trading-bg" id="tradingBg"></div>
+
+    <!-- Loading State -->
+    <div class="loading-container" id="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text">Checking account status...</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="subscription-container" id="main-container">
+        <img src="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png" alt="Finorix Pro Logo" class="subscription-logo">
+        
+        <div class="status-icon" id="status-icon"><i class="fas fa-lock"></i></div>
+        
+        <h1 id="main-title" class="pending-title">Account Status</h1>
+        <div class="account-number-box hidden" id="account-number-box">
+            <div>
+                <div class="account-number-label">Account ID</div>
+                <div class="account-number-value" id="account-number-display">#0000000</div>
+            </div>
+            <button class="copy-btn" id="copy-btn" onclick="copyAccountNumber()"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <div class="user-email" id="user-email"></div>
+        <h2 id="sub-title"></h2>
+        
+        <p id="status-message"></p>
+
+        <!-- Pending Section -->
+        <div id="pending-section" class="hidden">
+            <div class="contact-info">
+                <h3><i class="fas fa-shopping-cart" style="margin-right:6px;"></i> Purchase Subscription</h3>
+                <p><strong>This is a paid service. You need to purchase a subscription to use Finorix Bot.</strong></p>
+                <p style="margin-top:8px;">Contact us on Telegram to buy your subscription plan. Our team will guide you through the payment process and activate your account instantly after purchase.</p>
+                <p style="margin-top:10px; color: #ff69b4; font-weight: 600;"><i class="fas fa-info-circle" style="margin-right:4px;"></i> No free trial available. Subscription is required to access trading signals.</p>
+            </div>
+            
+            <a href="https://t.me/JisanX" class="telegram-btn" target="_blank">
+                <i class="fab fa-telegram" style="margin-right:6px;"></i> Buy Subscription on Telegram
+            </a>
+        </div>
+
+        <!-- Active Section -->
+        <div id="active-section" class="hidden">
+            <div class="active-info">
+                <h3><i class="fas fa-check-circle" style="margin-right:6px;"></i> Subscription Active</h3>
+                <p>Your account has been approved. You can now access the signal bot.</p>
+                <p id="expiry-info"></p>
+            </div>
+            
+            <button class="signal-btn" onclick="goToSignals()">
+                <i class="fas fa-chart-bar" style="margin-right:6px;"></i> SIGNAL
+            </button>
+            
+            <div id="expiry-badge-container"></div>
+            <div id="countdown-container" class="countdown-container hidden"></div>
+        </div>
+
+        <!-- Banned Section -->
+        <div id="banned-section" class="hidden">
+            <div class="contact-info" style="border-color: rgba(255, 50, 50, 0.4); background: rgba(255, 50, 50, 0.08);">
+                <h3 style="color: #ff5555;"><i class="fas fa-ban" style="margin-right:6px;"></i> Account Suspended</h3>
+                <p>Your account has been suspended by the administrator.</p>
+                <p>If you believe this is a mistake, please contact support on Telegram.</p>
+            </div>
+            
+            <a href="https://t.me/JisanX" class="telegram-btn" target="_blank">
+                <i class="fab fa-telegram" style="margin-right:6px;"></i> Contact on Telegram
+            </a>
+        </div>
+
+        <!-- Device Limit Section -->
+        <div id="device-limit-section" class="hidden">
+            <div class="contact-info" style="border-color: rgba(255, 165, 0, 0.4); background: rgba(255, 165, 0, 0.08);">
+                <h3 style="color: #ffa726;"><i class="fas fa-mobile-alt" style="margin-right:6px;"></i> Device Limit Reached</h3>
+                <p>You have reached the maximum number of devices allowed for your account.</p>
+                <p>Please contact support to increase your device limit or remove old devices.</p>
+            </div>
+            
+            <a href="https://t.me/JisanX" class="telegram-btn" target="_blank">
+                <i class="fab fa-telegram" style="margin-right:6px;"></i> Contact on Telegram
+            </a>
+        </div>
+
+        <!-- Install App -->
+        <div id="install-app-section" style="display:none;margin-top:20px;">
+            <button id="install-btn" onclick="installApp()" style="
+                width:100%;
+                padding:14px 20px;
+                background:linear-gradient(135deg,rgba(255,20,147,0.15),rgba(199,21,133,0.1));
+                border:1.5px solid rgba(255,20,147,0.35);
+                border-radius:14px;
+                color:#fff;
+                font-size:15px;
+                font-weight:700;
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                gap:10px;
+                transition:all 0.3s ease;
+            ">
+                <i class="fas fa-mobile-alt" style="font-size:20px;color:var(--pink);"></i>
+                <span>Install Mobile App</span>
+                <span style="background:var(--pink);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;">FREE</span>
+            </button>
+        </div>
+
+        <!-- iOS Install Guide -->
+        <div id="ios-install-guide" style="display:none;margin-top:15px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,20,147,0.2);border-radius:14px;padding:18px 20px;">
+            <p style="color:var(--pink);font-size:14px;font-weight:700;margin-bottom:12px;"><i class="fas fa-info-circle" style="margin-right:6px;"></i> Install on iPhone/iPad</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5;"><span style="color:var(--pink);font-weight:700;">1.</span> Tap the <i class="fas fa-share-square" style="color:var(--pink);"></i> Share button in Safari</p>
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5;"><span style="color:var(--pink);font-weight:700;">2.</span> Scroll down and tap <strong style="color:#fff;">"Add to Home Screen"</strong></p>
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5;"><span style="color:var(--pink);font-weight:700;">3.</span> Tap <strong style="color:#fff;">"Add"</strong> to install</p>
+            </div>
+            <button onclick="document.getElementById('ios-install-guide').style.display='none'" style="margin-top:12px;background:rgba(255,20,147,0.15);border:1px solid rgba(255,20,147,0.3);color:var(--pink);padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;width:100%;">Got it!</button>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="bottom-actions">
+            <a class="action-link" onclick="logout()"><i class="fas fa-sign-out-alt" style="margin-right:4px;"></i> Logout</a>
+            <a class="action-link" onclick="checkStatus()"><i class="fas fa-sync-alt" style="margin-right:4px;"></i> Refresh Status</a>
+        </div>
+    </div>
+
+    <!-- Popup Overlay -->
+    <div class="popup-overlay" id="popup-overlay">
+        <div class="popup-modal">
+            <div class="popup-icon" id="popup-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="popup-title" id="popup-title">Notice</div>
+            <div class="popup-message" id="popup-message"></div>
+            <button class="popup-btn" onclick="closePopup()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Background particles
+        function createBackground() {
+            const bg = document.getElementById('tradingBg');
+            const count = window.innerWidth <= 768 ? 10 : 20;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.width = `${Math.random() * 100 + 50}px`;
+                p.style.height = p.style.width;
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * 100}%`;
+                p.style.animationDelay = `${Math.random() * 5}s`;
+                p.style.animationDuration = `${10 + Math.random() * 10}s`;
+                bg.appendChild(p);
+            }
+        }
+        createBackground();
+
+        const AUTH_API_BASE = 'https://finorixpro.pythonanywhere.com';
+
+        function showPopup(title, message, icon = '<i class="fas fa-exclamation-triangle"></i>') {
+            document.getElementById('popup-icon').innerHTML = icon;
+            document.getElementById('popup-title').textContent = title;
+            document.getElementById('popup-message').innerHTML = message;
+            document.getElementById('popup-overlay').classList.add('show');
+        }
+
+        function closePopup() {
+            document.getElementById('popup-overlay').classList.remove('show');
+        }
+
+        // Copy account number
+        function copyAccountNumber() {
+            const acctNum = document.getElementById('account-number-display').textContent;
+            navigator.clipboard.writeText(acctNum).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = acctNum;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Show account number
+        function showAccountNumber(accountNumber) {
+            const box = document.getElementById('account-number-box');
+            if (accountNumber) {
+                document.getElementById('account-number-display').textContent = '#' + accountNumber;
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('popup-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closePopup();
+        });
+
+        function logout() {
+            localStorage.removeItem('finorix_auth_token');
+            localStorage.removeItem('finorix_auth_email');
+            localStorage.removeItem('finorix_auth_status');
+            localStorage.removeItem('finorix_login_time');
+            window.location.href = 'login.html';
+        }
+
+        function goToSignals() {
+            window.location.href = 'index.html';
+        }
+
+        // Check if user is logged in
+        function requireAuth() {
+            const token = localStorage.getItem('finorix_auth_token');
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!token || !email) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // Check user status from server
+        async function checkStatus() {
+            if (!requireAuth()) return;
+
+            const email = localStorage.getItem('finorix_auth_email');
+            const loadingState = document.getElementById('loading-state');
+            const mainContainer = document.getElementById('main-container');
+
+            // Show loading
+            loadingState.style.display = 'block';
+            mainContainer.classList.remove('show');
+
+            try {
+                const response = await fetch(`${AUTH_API_BASE}/api/auth/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const result = await response.json();
+
+                const status = result.status || 'pending';
+
+                // Update localStorage status
+                localStorage.setItem('finorix_auth_status', status);
+
+                // Display email
+                document.getElementById('user-email').textContent = email;
+
+                // Hide loading, show main
+                loadingState.style.display = 'none';
+                mainContainer.classList.add('show');
+
+                if (status === 'active') {
+                    // Check device limit from localStorage (set during login)
+                    const deviceLimitFlag = localStorage.getItem('finorix_device_limit');
+                    if (deviceLimitFlag === 'reached') {
+                        showDeviceLimitState(result);
+                    } else {
+                        showActiveState(result);
+                    }
+                } else if (status === 'banned') {
+                    showBannedState(result);
+                } else if (status === 'not_found') {
+                    showPopup('Account Issue', 'Account not found. Please register again.');
+                    setTimeout(() => logout(), 3000);
+                } else {
+                    showPendingState(result);
+                }
+
+            } catch (error) {
+                console.error('Status check error:', error);
+                
+                // Fallback: use localStorage status
+                const savedStatus = localStorage.getItem('finorix_auth_status');
+                document.getElementById('user-email').textContent = email;
+                loadingState.style.display = 'none';
+                mainContainer.classList.add('show');
+
+                if (savedStatus === 'active') {
+                    showActiveState({});
+                } else {
+                    showPendingState({});
+                }
+            }
+        }
+
+        function showBannedState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.remove('active-state');
+            container.style.borderColor = '#ff5555';
+            container.style.boxShadow = '0 0 30px rgba(255, 50, 50, 0.3)';
+            container.style.animation = 'none';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-ban"></i>';
+            document.getElementById('main-title').textContent = 'Account Suspended';
+            document.getElementById('main-title').className = 'pending-title';
+            document.getElementById('main-title').style.color = '#ff5555';
+            document.getElementById('sub-title').textContent = 'Your account has been banned';
+            document.getElementById('status-message').textContent = 'Your access to Finorix Pro has been revoked by the administrator.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.add('hidden');
+            document.getElementById('active-section').classList.add('hidden');
+            document.getElementById('banned-section').classList.remove('hidden');
+            document.getElementById('device-limit-section').classList.add('hidden');
+        }
+
+        function showPendingState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.remove('active-state');
+            container.style.borderColor = '';
+            container.style.boxShadow = '';
+            container.style.animation = '';
+            document.getElementById('main-title').style.color = '';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-lock"></i>';
+            document.getElementById('main-title').textContent = 'Subscription Required';
+            document.getElementById('main-title').className = 'pending-title';
+            document.getElementById('sub-title').textContent = 'Purchase a subscription to get started';
+            document.getElementById('status-message').textContent = 'Finorix Bot is a paid service. To access trading signals, you must purchase a subscription. Contact us on Telegram to buy your plan and activate your account.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.remove('hidden');
+            document.getElementById('active-section').classList.add('hidden');
+            document.getElementById('banned-section').classList.add('hidden');
+            document.getElementById('device-limit-section').classList.add('hidden');
+        }
+
+        function showActiveState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.add('active-state');
+            container.style.borderColor = '';
+            container.style.boxShadow = '';
+            container.style.animation = '';
+            document.getElementById('main-title').style.color = '';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-check-circle"></i>';
+            document.getElementById('main-title').textContent = 'Account Active';
+            document.getElementById('main-title').className = 'active-title';
+            document.getElementById('sub-title').textContent = 'Your subscription is active';
+            document.getElementById('status-message').textContent = 'Your account has been approved. Click the Signal button below to access live trading signals.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.add('hidden');
+            document.getElementById('active-section').classList.remove('hidden');
+            document.getElementById('banned-section').classList.add('hidden');
+            document.getElementById('device-limit-section').classList.add('hidden');
+
+            // Show expiry info with countdown
+            const expiryContainer = document.getElementById('expiry-badge-container');
+            const countdownContainer = document.getElementById('countdown-container');
+            if (data.expiry_date) {
+                document.getElementById('expiry-info').textContent = 'Expires: ' + data.expiry_date;
+                expiryContainer.innerHTML = '';
+                countdownContainer.classList.remove('hidden');
+                startCountdown(data.expiry_date);
+            } else {
+                document.getElementById('expiry-info').textContent = 'No expiry set - Lifetime access';
+                expiryContainer.innerHTML = '';
+                countdownContainer.classList.add('hidden');
+                stopCountdown();
+            }
+        }
+
+        function showDeviceLimitState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.remove('active-state');
+            container.style.borderColor = '#ffa726';
+            container.style.boxShadow = '0 0 30px rgba(255, 165, 0, 0.3)';
+            container.style.animation = 'none';
+            document.getElementById('main-title').style.color = '#ffa726';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-mobile-alt"></i>';
+            document.getElementById('main-title').textContent = 'Device Limit Reached';
+            document.getElementById('main-title').className = 'pending-title';
+            document.getElementById('sub-title').textContent = 'Maximum devices exceeded';
+            document.getElementById('status-message').textContent = 'You have reached the maximum number of allowed devices. Please contact support to resolve this issue.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.add('hidden');
+            document.getElementById('active-section').classList.add('hidden');
+            document.getElementById('banned-section').classList.add('hidden');
+            document.getElementById('device-limit-section').classList.remove('hidden');
+        }
+
+        // Countdown timer
+        let countdownInterval = null;
+
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function startCountdown(expiryDateStr) {
+            stopCountdown();
+
+            const container = document.getElementById('countdown-container');
+
+            function updateCountdown() {
+                // Parse expiry as BD time (UTC+6)
+                const parts = expiryDateStr.split(/[- :]/);
+                const expiryUTC = Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3] - 6, parts[4], parts[5]);
+                const nowUTC = Date.now();
+                let diff = expiryUTC - nowUTC;
+
+                if (diff <= 0) {
+                    stopCountdown();
+                    container.innerHTML = '<div class="countdown-expired"><i class="fas fa-clock" style="margin-right:6px;"></i> Subscription Expired!</div>';
+                    // Refresh status after short delay
+                    setTimeout(() => checkStatus(), 3000);
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                diff %= (1000 * 60 * 60 * 24);
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                diff %= (1000 * 60 * 60);
+                const minutes = Math.floor(diff / (1000 * 60));
+                diff %= (1000 * 60);
+                const seconds = Math.floor(diff / 1000);
+
+                // Determine urgency class
+                const totalMs = expiryUTC - nowUTC;
+                let urgencyClass = '';
+                if (totalMs < 60 * 60 * 1000) {
+                    urgencyClass = 'countdown-urgent';
+                } else if (totalMs < 24 * 60 * 60 * 1000) {
+                    urgencyClass = 'countdown-warning';
+                }
+
+                let html = '<div class="countdown-label"><i class="fas fa-hourglass-half" style="margin-right:6px;"></i> Time Remaining</div>';
+                html += `<div class="countdown-timer ${urgencyClass}">`;
+
+                if (days > 0) {
+                    html += `<div class="countdown-unit"><div class="countdown-value">${days}</div><div class="countdown-name">Days</div></div>`;
+                }
+                html += `<div class="countdown-unit"><div class="countdown-value">${String(hours).padStart(2, '0')}</div><div class="countdown-name">Hours</div></div>`;
+                html += `<div class="countdown-unit"><div class="countdown-value">${String(minutes).padStart(2, '0')}</div><div class="countdown-name">Min</div></div>`;
+                html += `<div class="countdown-unit"><div class="countdown-value">${String(seconds).padStart(2, '0')}</div><div class="countdown-name">Sec</div></div>`;
+                html += '</div>';
+
+                container.innerHTML = html;
+            }
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // Init
+        checkStatus();
+
+        // ===== PWA INSTALL =====
+        let deferredPrompt = null;
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+        }
+
+        // Capture the install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-app-section').style.display = 'block';
+        });
+
+        // Check if already installed as PWA
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            document.getElementById('install-app-section').style.display = 'none';
+        });
+
+        // Show install button for iOS (no beforeinstallprompt support)
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+        function isInStandaloneMode() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        }
+
+        // Show button on iOS if not already installed
+        if (isIOS() && !isInStandaloneMode()) {
+            document.getElementById('install-app-section').style.display = 'block';
+        }
+
+        // Also show for Android browsers that support PWA but haven't triggered prompt yet
+        if (!isInStandaloneMode() && /Android/i.test(navigator.userAgent)) {
+            setTimeout(() => {
+                if (!deferredPrompt) {
+                    document.getElementById('install-app-section').style.display = 'block';
+                }
+            }, 2000);
+        }
+
+        function installApp() {
+            if (deferredPrompt) {
+                // Chrome/Edge/Samsung Browser - native install prompt
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        document.getElementById('install-app-section').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else if (isIOS()) {
+                // iOS - show manual guide
+                document.getElementById('ios-install-guide').style.display = 'block';
+            } else {
+                // Fallback - show generic guide
+                showPopup('Install App', 
+                    '<div style="text-align:left;line-height:1.8;font-size:13px;">' +
+                    '<p><strong style="color:var(--pink);">Chrome/Edge:</strong> Tap the <b>3-dot menu</b> (top right) and select <b>"Install App"</b> or <b>"Add to Home Screen"</b></p>' +
+                    '<p><strong style="color:var(--pink);">Samsung Browser:</strong> Tap the <b>menu</b> and select <b>"Add page to"</b> > <b>"Home Screen"</b></p>' +
+                    '</div>'
+                );
+            }
+        }
+    </script>
+    <script src="/protect.js"></script>
+</body>
+</html>

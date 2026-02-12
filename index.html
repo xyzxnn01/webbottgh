@@ -1,0 +1,2398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finorix Pro - Signal Board</title>
+    <link rel="icon" href="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --pink: #ff1493;
+            --pink-light: #ff69b4;
+            --pink-dark: #c71585;
+            --bg-dark: #0a0a0a;
+            --bg-card: #1a1a1a;
+            --text: #ffffff;
+            --shadow-pink: 0 0 30px rgba(255, 20, 147, 0.3);
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #2a0a1a 30%, #1a0a1a 70%, #0a0a0a 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: gradientShift 20s ease infinite;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                background: linear-gradient(135deg, #0a0a0a 0%, #2a0a1a 30%, #1a0a1a 70%, #0a0a0a 100%);
+            }
+            50% {
+                background: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 30%, #2a0a1a 70%, #0a0a0a 100%);
+            }
+        }
+
+        /* Trading Background Animation */
+        .trading-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, var(--pink) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0) translateX(0);
+                opacity: 0.3;
+            }
+            50% {
+                transform: translateY(-100px) translateX(50px);
+                opacity: 0.6;
+            }
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #000 0%, #2a0a1a 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 99999;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+
+        #loading-screen.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+
+        .loading-logo {
+            width: 150px;
+            height: 150px;
+            border-radius: 20px;
+            animation: pulse 2s ease-in-out infinite;
+            box-shadow: 0 0 50px rgba(255, 20, 147, 0.8);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .loading-text {
+            margin-top: 30px;
+            font-size: 32px;
+            font-weight: 900;
+            background: linear-gradient(90deg, var(--pink), var(--pink-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(255, 20, 147, 0.5);
+        }
+
+        .loading-spinner {
+            margin-top: 20px;
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 20, 147, 0.2);
+            border-top: 4px solid var(--pink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Password Container */
+        #password-container {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.95), rgba(42, 10, 26, 0.95));
+            padding: 40px;
+            border-radius: 20px;
+            border: 3px solid var(--pink);
+            box-shadow: var(--shadow-pink), 0 0 60px rgba(255, 20, 147, 0.2);
+            text-align: center;
+            width: 90%;
+            max-width: 450px;
+            z-index: 100000;
+            animation: borderGlow 8s infinite alternate;
+        }
+
+        @keyframes borderGlow {
+            0% {
+                border-color: var(--pink);
+                box-shadow: 0 0 40px rgba(255, 20, 147, 0.4);
+            }
+            50% {
+                border-color: var(--pink-light);
+                box-shadow: 0 0 40px rgba(255, 105, 180, 0.4);
+            }
+            100% {
+                border-color: var(--pink-dark);
+                box-shadow: 0 0 40px rgba(199, 21, 133, 0.4);
+            }
+        }
+
+        .password-logo {
+            width: 120px;
+            height: 120px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.6);
+        }
+
+        #password-container h2 {
+            margin: 20px 0;
+            color: var(--pink);
+            font-size: 28px;
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
+        }
+
+        #password-container p {
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+        }
+
+        #password-container input {
+            padding: 15px;
+            width: 100%;
+            margin-bottom: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 2px solid rgba(255, 20, 147, 0.5);
+            color: white;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+
+        #password-container input:focus {
+            outline: none;
+            border-color: var(--pink);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.5);
+        }
+
+        .auth-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .auth-toggle-btn {
+            flex: 1;
+            padding: 10px 12px;
+            border: 2px solid rgba(255, 20, 147, 0.5);
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .auth-toggle-btn.active {
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            border-color: var(--pink);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.6);
+        }
+
+        .auth-note {
+            margin-top: 10px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+        }
+
+        #password-container .auth-submit {
+            padding: 15px 40px;
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 900;
+            font-size: 16px;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        #password-container .auth-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
+        }
+
+        #password-container .auth-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #password-error {
+            color: #ff5555;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        .telegram-link {
+            display: inline-flex;
+            align-items: center;
+            margin-top: 20px;
+            color: var(--pink);
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .telegram-link:hover {
+            color: var(--pink-light);
+            text-shadow: 0 0 10px rgba(255, 20, 147, 0.5);
+        }
+
+        /* Popup Overlay */
+        #popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200000;
+        }
+
+        #popup-overlay.show {
+            display: flex;
+        }
+
+        .popup-modal {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.98), rgba(42, 10, 26, 0.98));
+            border: 3px solid var(--pink);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: var(--shadow-pink);
+            text-align: center;
+            animation: popupSlideIn 0.4s ease-out;
+        }
+
+        @keyframes popupSlideIn {
+            from {
+                transform: scale(0.7);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .popup-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .popup-title {
+            font-size: 26px;
+            font-weight: 900;
+            color: var(--pink);
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px rgba(255, 20, 147, 0.6);
+        }
+
+        .popup-message {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.85);
+            margin-bottom: 30px;
+            line-height: 1.8;
+        }
+
+        .popup-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+            margin: 5px;
+        }
+
+        .popup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 20, 147, 0.6);
+        }
+
+        /* Main App Container (Hidden by default) */
+        #app-container {
+            display: none;
+            width: 100%;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            z-index: 1;
+            position: relative;
+        }
+
+        #app-container.show {
+            display: block;
+        }
+
+        .app-header {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(42, 10, 26, 0.9));
+            border: 2px solid var(--pink);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-pink);
+        }
+
+        .app-header h1 {
+            color: var(--pink);
+            font-size: 32px;
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
+        }
+
+        .content-card {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(26, 26, 26, 0.9));
+            border: 2px solid var(--pink);
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow-pink);
+        }
+
+        .content-card h2 {
+            color: var(--pink);
+            margin-bottom: 15px;
+        }
+
+        .content-card p {
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+        }
+
+        /* Signal Box */
+        .signal-box {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.95), rgba(42, 10, 26, 0.95));
+            border: 2px solid var(--pink);
+            border-radius: 6px;
+            padding: 2px 6px;
+            margin: 0 auto 5px;
+            max-width: 280px;
+            box-shadow: var(--shadow-pink);
+            text-align: center;
+            animation: boxGlow 2s infinite alternate;
+        }
+
+        @keyframes boxGlow {
+            0% {
+                box-shadow: 0 0 30px rgba(255, 20, 147, 0.4);
+            }
+            100% {
+                box-shadow: 0 0 50px rgba(255, 20, 147, 0.6);
+            }
+        }
+
+        pre#formattedSignal {
+            white-space: pre-wrap;
+            text-align: left;
+            background: linear-gradient(135deg, rgba(0, 0, 0, 0.9), rgba(26, 10, 20, 0.9));
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 20, 147, 0.5);
+            font-size: 0.85em;
+            line-height: 1.1;
+            box-shadow: inset 0 0 15px rgba(255, 20, 147, 0.15);
+            font-weight: 600;
+            letter-spacing: 0px;
+            font-family: 'Courier New', monospace;
+            max-width: 260px;
+            margin: 0 auto;
+        }
+
+        .signal-direction {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            padding: 3px 10px;
+            border-radius: 5px;
+            font-weight: 900;
+            font-size: 0.9em;
+            margin: 0;
+            animation: pulse 2s infinite;
+        }
+
+        .candlestick {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 40px;
+            height: 50px;
+            position: relative;
+        }
+
+        .wick-top {
+            width: 2px;
+            height: 8px;
+            background: currentColor;
+        }
+
+        .candle-body {
+            width: 16px;
+            height: 26px;
+            border-radius: 2px;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        .wick-bottom {
+            width: 2px;
+            height: 8px;
+            background: currentColor;
+        }
+
+        .candle-green {
+            color: #00ff00;
+        }
+
+        .candle-green .candle-body {
+            background: #00ff00;
+        }
+
+        .candle-red {
+            color: #ff0000;
+        }
+
+        .candle-red .candle-body {
+            background: #ff0000;
+        }
+
+        .signal-call {
+            background: linear-gradient(135deg, rgba(0, 255, 100, 0.3), rgba(0, 200, 80, 0.3));
+            border: 2px solid #00ff66;
+            color: #00ff66;
+            text-shadow: 0 0 10px rgba(0, 255, 100, 0.8);
+            box-shadow: 0 4px 15px rgba(0, 255, 100, 0.4);
+        }
+
+        .signal-put {
+            background: linear-gradient(135deg, rgba(255, 50, 50, 0.3), rgba(200, 0, 0, 0.3));
+            border: 2px solid #ff3333;
+            color: #ff3333;
+            text-shadow: 0 0 10px rgba(255, 50, 50, 0.8);
+            box-shadow: 0 4px 15px rgba(255, 50, 50, 0.4);
+        }
+
+        .arrow-icon {
+            font-size: 1.4em;
+            font-weight: bold;
+            animation: bounce 1.5s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* TradingView Container */
+        .tradingview-container {
+            width: 100%;
+            height: 450px;
+            margin: 15px 0;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.5);
+            border: 2px solid var(--pink);
+        }
+
+        /* Market Selector */
+        .market-selector {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.9), rgba(42, 10, 26, 0.9));
+            border: 2px solid var(--pink);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: var(--shadow-pink);
+        }
+
+        .market-select-dropdown {
+            width: 100%;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid var(--pink);
+            color: white;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .market-select-dropdown:focus {
+            outline: none;
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.5);
+        }
+
+        .timezone-selector {
+            margin-top: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .timezone-label {
+            color: var(--pink);
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .quick-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .market-btn {
+            padding: 12px 20px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid rgba(255, 20, 147, 0.4);
+            color: white;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 700;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .market-btn:hover {
+            background: rgba(255, 20, 147, 0.2);
+            border-color: var(--pink);
+            transform: translateY(-2px);
+        }
+
+        .market-btn.active {
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            border-color: var(--pink);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            #password-container {
+                padding: 30px 20px;
+            }
+
+            .loading-text {
+                font-size: 24px;
+            }
+
+            .app-header h1 {
+                font-size: 24px;
+            }
+
+            .ticket-modal { width: 95%; padding: 25px; }
+        }
+
+        /* Support Ticket System */
+        .support-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .support-msg-btn {
+            position: relative;
+            background: rgba(255, 20, 147, 0.15);
+            border: 2px solid var(--pink);
+            color: var(--pink);
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .support-msg-btn:hover {
+            background: rgba(255, 20, 147, 0.3);
+            transform: scale(1.1);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+        }
+
+        .notif-dot {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            background: #ff3333;
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 11px;
+            font-weight: 900;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: notifPulse 1.5s infinite;
+            border: 2px solid rgba(0, 0, 0, 0.8);
+        }
+
+        .notif-dot.show { display: flex; }
+
+        @keyframes notifPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(255, 51, 51, 0.5); }
+            50% { box-shadow: 0 0 0 8px rgba(255, 51, 51, 0); }
+        }
+
+        /* Ticket Modal Overlay */
+        .ticket-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 300;
+        }
+
+        .ticket-overlay.show { display: flex; }
+
+        .ticket-modal {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.98), rgba(42, 10, 26, 0.98));
+            border: 2px solid var(--pink);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 550px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
+            animation: ticketSlideIn 0.3s ease;
+        }
+
+        @keyframes ticketSlideIn {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .ticket-modal h2 {
+            color: var(--pink);
+            margin-bottom: 20px;
+            font-size: 22px;
+        }
+
+        .ticket-modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 24px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .ticket-modal-close:hover { color: white; }
+
+        .ticket-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 20, 147, 0.2);
+            padding-bottom: 10px;
+        }
+
+        .ticket-tab {
+            background: rgba(255, 20, 147, 0.1);
+            border: 1px solid rgba(255, 20, 147, 0.2);
+            color: rgba(255, 255, 255, 0.6);
+            padding: 8px 18px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .ticket-tab.active {
+            background: var(--pink);
+            border-color: var(--pink);
+            color: white;
+        }
+
+        .ticket-form textarea {
+            width: 100%;
+            min-height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 10px;
+            color: white;
+            padding: 15px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 15px;
+        }
+
+        .ticket-form textarea:focus {
+            outline: none;
+            border-color: var(--pink);
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.2);
+        }
+
+        .ticket-photo-upload {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .ticket-photo-upload input[type="text"] {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 8px;
+            color: white;
+            padding: 10px 15px;
+            font-size: 13px;
+        }
+
+        .ticket-photo-upload input:focus {
+            outline: none;
+            border-color: var(--pink);
+        }
+
+        .ticket-submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .ticket-submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 20, 147, 0.5);
+        }
+
+        .ticket-submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Ticket List */
+        .ticket-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 20, 147, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .ticket-item:hover {
+            border-color: var(--pink);
+            background: rgba(255, 20, 147, 0.05);
+        }
+
+        .ticket-status {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .ticket-status.pending { background: rgba(255, 165, 0, 0.15); color: #ffa726; }
+        .ticket-status.replied { background: rgba(0, 230, 118, 0.15); color: #00e676; }
+        .ticket-status.closed { background: rgba(150, 150, 150, 0.15); color: #999; }
+
+        .ticket-msg-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+
+        .ticket-date {
+            color: rgba(255, 255, 255, 0.35);
+            font-size: 11px;
+            margin-top: 6px;
+        }
+
+        /* Ticket Detail / Chat */
+        .ticket-chat {
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 10px 0;
+        }
+
+        .chat-bubble {
+            max-width: 85%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .chat-bubble.user {
+            background: rgba(255, 20, 147, 0.15);
+            border: 1px solid rgba(255, 20, 147, 0.25);
+            color: rgba(255, 255, 255, 0.9);
+            margin-right: auto;
+            border-bottom-left-radius: 4px;
+        }
+
+        .chat-bubble.admin {
+            background: rgba(0, 230, 118, 0.1);
+            border: 1px solid rgba(0, 230, 118, 0.25);
+            color: rgba(255, 255, 255, 0.9);
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .chat-sender {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 4px;
+        }
+
+        .chat-bubble.user .chat-sender { color: var(--pink); }
+        .chat-bubble.admin .chat-sender { color: #00e676; }
+
+        .chat-time {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.3);
+            margin-top: 4px;
+        }
+
+        .ticket-photo-preview {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 8px;
+            border: 1px solid rgba(255, 20, 147, 0.2);
+        }
+
+        .no-tickets {
+            text-align: center;
+            color: rgba(255, 255, 255, 0.4);
+            padding: 30px;
+            font-size: 14px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--pink);
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: color 0.3s;
+        }
+
+        .back-btn:hover { color: var(--pink-light); }
+
+        /* Settings Sidebar */
+        .settings-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 500;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .settings-overlay.show {
+            display: block;
+            opacity: 1;
+        }
+
+        .settings-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            max-width: 90vw;
+            height: 100%;
+            background: linear-gradient(180deg, #0a0a0a 0%, #1a0a1a 50%, #0a0a0a 100%);
+            border-left: 2px solid var(--pink);
+            z-index: 501;
+            overflow-y: auto;
+            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: -10px 0 40px rgba(255, 20, 147, 0.2);
+        }
+        .settings-sidebar.open {
+            right: 0;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 25px 20px;
+            border-bottom: 1px solid rgba(255, 20, 147, 0.2);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .settings-header h2 {
+            color: var(--pink);
+            font-size: 20px;
+            margin: 0;
+        }
+        .settings-close-btn {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.6);
+            font-size: 28px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 5px;
+            transition: color 0.3s, transform 0.3s;
+        }
+        .settings-close-btn:hover {
+            color: var(--pink);
+            transform: rotate(90deg);
+        }
+
+        .settings-section {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255, 20, 147, 0.1);
+        }
+        .settings-section-title {
+            color: var(--pink);
+            font-size: 13px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 15px;
+        }
+
+        .settings-info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .settings-info-row:last-child {
+            border-bottom: none;
+        }
+        .settings-info-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 13px;
+        }
+        .settings-info-value {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            text-align: right;
+            max-width: 200px;
+            word-break: break-all;
+        }
+
+        .settings-countdown {
+            background: rgba(255, 20, 147, 0.08);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            margin-top: 10px;
+        }
+        .settings-countdown-label {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+        .settings-countdown-timer {
+            color: var(--pink);
+            font-size: 22px;
+            font-weight: 900;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+
+        .settings-email-box {
+            background: rgba(255, 20, 147, 0.06);
+            border: 1px solid rgba(255, 20, 147, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+        .settings-email-box .email-label {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+        .settings-email-box .email-value {
+            color: var(--pink-light);
+            font-size: 15px;
+            font-weight: 600;
+            word-break: break-all;
+        }
+
+        .settings-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255, 20, 147, 0.08);
+            border: 1px solid rgba(255, 20, 147, 0.2);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 8px;
+        }
+        .settings-btn:hover {
+            background: rgba(255, 20, 147, 0.15);
+            border-color: var(--pink);
+            color: #fff;
+        }
+        .settings-btn .btn-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            background: rgba(255, 20, 147, 0.15);
+            border-radius: 8px;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .toggle-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 16px;
+            background: rgba(255, 20, 147, 0.08);
+            border: 1px solid rgba(255, 20, 147, 0.2);
+            border-radius: 10px;
+        }
+        .toggle-row .toggle-info {
+            flex: 1;
+        }
+        .toggle-row .toggle-title {
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 3px;
+        }
+        .toggle-row .toggle-desc {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 11px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 28px;
+            flex-shrink: 0;
+            margin-left: 15px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 28px;
+            transition: 0.3s;
+        }
+        .toggle-slider::before {
+            content: '';
+            position: absolute;
+            height: 22px;
+            width: 22px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+        .toggle-switch input:checked + .toggle-slider {
+            background: var(--pink);
+            box-shadow: 0 0 15px rgba(255, 20, 147, 0.4);
+        }
+        .toggle-switch input:checked + .toggle-slider::before {
+            transform: translateX(22px);
+        }
+
+        /* Settings button card */
+        .settings-open-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 0;
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <!-- Trading Background -->
+    <div class="trading-bg" id="tradingBg"></div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <img src="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png" alt="Finorix Pro Logo" class="loading-logo">
+        <div class="loading-text">Finorix Pro</div>
+        <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Main App Container -->
+    <div id="app-container" class="show">
+        <div class="app-header">
+            <img src="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png" alt="Finorix Pro" style="width: 60px; height: 60px; border-radius: 10px; margin-bottom: 10px;">
+            <h1>Finorix Pro Signal Board</h1>
+            <p style="color: rgba(255, 255, 255, 0.7); margin-top: 10px;">Real-Time Signal Updates</p>
+        </div>
+
+        <!-- Signal Box -->
+        <div id="signalResult" class="signal-box">
+            <h5 style="color: var(--pink); margin-bottom: 1px; font-size: 0.75em; font-weight: 700;"><span style="display:inline-block;width:14px;height:10px;border:2px solid var(--pink);border-radius:2px;vertical-align:middle;margin-right:3px;position:relative;"><span style="position:absolute;top:2px;left:2px;width:4px;height:4px;background:var(--pink);border-radius:1px;"></span><span style="position:absolute;top:1px;right:1px;width:3px;height:5px;border-right:1.5px solid var(--pink);border-top:1.5px solid var(--pink);"></span></span> Finorix Pro Signal</h5>
+            <pre id="formattedSignal"></pre>
+        </div>
+
+        <!-- TradingView Widget -->
+        <div id="tradingview-widget" class="tradingview-container"></div>
+
+        <!-- Market Selector -->
+        <div class="market-selector">
+            <h3 style="color: var(--pink); margin-bottom: 15px;">Select Market</h3>
+            <select id="market-select" class="market-select-dropdown">
+                <option value="EURUSD">EUR/USD</option>
+                <option value="GBPUSD">GBP/USD</option>
+                <option value="USDJPY">USD/JPY</option>
+                <option value="USDCAD">USD/CAD</option>
+                <option value="AUDUSD">AUD/USD</option>
+                <option value="NZDUSD">NZD/USD</option>
+                <option value="EURJPY">EUR/JPY</option>
+                <option value="GBPJPY">GBP/JPY</option>
+                <option value="EURGBP">EUR/GBP</option>
+                <option value="CADJPY">CAD/JPY</option>
+                <option value="XAUUSD">GOLD (XAU/USD)</option>
+                <option value="XAGUSD">SILVER (XAG/USD)</option>
+                <option value="USOIL">OIL</option>
+                <option value="US30">US30</option>
+                <option value="US500">US500</option>
+                <option value="BTCUSDT">BTC/USDT</option>
+                <option value="ETHUSDT">ETH/USDT</option>
+            </select>
+
+            <div class="timezone-selector">
+                <label class="timezone-label" for="timezone-select">Select Time Zone</label>
+                <select id="timezone-select" class="market-select-dropdown">
+                    <option value="-480">UTC-08:00</option>
+                    <option value="-300">UTC-05:00</option>
+                    <option value="0">UTC+00:00</option>
+                    <option value="60">UTC+01:00</option>
+                    <option value="180">UTC+03:00</option>
+                    <option value="330" selected>UTC+05:30 (IST)</option>
+                    <option value="360">UTC+06:00</option>
+                    <option value="420">UTC+07:00</option>
+                    <option value="480">UTC+08:00</option>
+                    <option value="540">UTC+09:00</option>
+                    <option value="600">UTC+10:00</option>
+                    <option value="720">UTC+12:00</option>
+                </select>
+            </div>
+            
+            <div class="quick-buttons">
+                <button class="market-btn active" data-market="EURUSD">EUR/USD</button>
+                <button class="market-btn" data-market="GBPUSD">GBP/USD</button>
+                <button class="market-btn" data-market="USDJPY">USD/JPY</button>
+                <button class="market-btn" data-market="XAUUSD">GOLD</button>
+                <button class="market-btn" data-market="BTCUSDT">BTC</button>
+                <button class="market-btn" data-market="ETHUSDT">ETH</button>
+            </div>
+        </div>
+
+        <div class="content-card">
+            <div class="support-header">
+                <h2>📞 Support</h2>
+                <button class="support-msg-btn" onclick="openTicketModal()">
+                    💬
+                    <span class="notif-dot" id="supportNotifDot"></span>
+                </button>
+            </div>
+            <p>For any issues, create a support ticket.</p>
+        </div>
+
+        <div class="content-card">
+            <button class="settings-open-btn" onclick="openSettings()">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(255,20,147,0.15);border:2px solid var(--pink);border-radius:12px;font-size:20px;">&#9881;</span>
+                <div>
+                    <h2 style="margin:0;font-size:18px;">Settings</h2>
+                    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);">Account, Security & Preferences</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings Sidebar -->
+    <div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+    <div class="settings-sidebar" id="settingsSidebar">
+        <div class="settings-header">
+            <h2>&#9881; Settings</h2>
+            <button class="settings-close-btn" onclick="closeSettings()">&times;</button>
+        </div>
+
+        <!-- Account Section -->
+        <div class="settings-section">
+            <div class="settings-section-title">Account</div>
+
+            <div class="settings-email-box">
+                <div class="email-label">Registered Email</div>
+                <div class="email-value" id="settings-email">Loading...</div>
+            </div>
+
+            <div class="settings-info-row">
+                <span class="settings-info-label">Account Number</span>
+                <span class="settings-info-value" id="settings-account-number">--</span>
+            </div>
+            <div class="settings-info-row">
+                <span class="settings-info-label">Status</span>
+                <span class="settings-info-value" id="settings-status">--</span>
+            </div>
+        </div>
+
+        <!-- Subscription Section -->
+        <div class="settings-section">
+            <div class="settings-section-title">Subscription</div>
+            <div class="settings-info-row">
+                <span class="settings-info-label">Expiry Date</span>
+                <span class="settings-info-value" id="settings-expiry">--</span>
+            </div>
+            <div class="settings-countdown" id="settings-countdown-box" style="display:none;">
+                <div class="settings-countdown-label">Time Remaining</div>
+                <div class="settings-countdown-timer" id="settings-countdown-timer">--:--:--:--</div>
+            </div>
+        </div>
+
+        <!-- Security Section -->
+        <div class="settings-section">
+            <div class="settings-section-title">Security</div>
+
+            <button class="settings-btn" onclick="showChangePasswordModal()">
+                <span class="btn-icon"><span style="display:inline-block;position:relative;width:16px;height:18px;"><span style="position:absolute;top:0;left:3px;width:10px;height:7px;border:2.5px solid #ff1493;border-bottom:none;border-radius:5px 5px 0 0;"></span><span style="position:absolute;bottom:0;left:0;width:16px;height:11px;background:#ff1493;border-radius:2px;"></span><span style="position:absolute;bottom:3px;left:6.5px;width:3px;height:4px;background:#1a1a2e;border-radius:1px;"></span></span></span>
+                <span>Change Password</span>
+            </button>
+
+            <div class="toggle-row">
+                <div class="toggle-info">
+                    <div class="toggle-title">Login OTP Verification</div>
+                    <div class="toggle-desc">Email OTP required on every login</div>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="otp-toggle" onchange="handle2FAToggle(this)">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Logout -->
+        <div class="settings-section" style="border-bottom:none;">
+            <button onclick="logout()" style="display:flex;align-items:center;gap:10px;width:100%;padding:14px 16px;background:rgba(255,50,50,0.1);border:1px solid rgba(255,50,50,0.3);border-radius:10px;color:#ff4444;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.3s;" onmouseover="this.style.background='rgba(255,50,50,0.2)';this.style.borderColor='#ff4444'" onmouseout="this.style.background='rgba(255,50,50,0.1)';this.style.borderColor='rgba(255,50,50,0.3)'">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:rgba(255,50,50,0.15);border-radius:8px;font-size:16px;">&#10140;</span>
+                <span>Logout</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Ticket Modal -->
+    <div class="ticket-overlay" id="ticketOverlay">
+        <div class="ticket-modal">
+            <button class="ticket-modal-close" onclick="closeTicketModal()">&times;</button>
+            <h2 id="ticketModalTitle"><span style="display:inline-flex;align-items:center;justify-content:center;width:24px;height:20px;border:2.5px solid currentColor;border-radius:12px 12px 12px 2px;margin-right:4px;position:relative;"><span style="position:absolute;width:4px;height:4px;background:currentColor;border-radius:50%;left:3px;"></span><span style="position:absolute;width:4px;height:4px;background:currentColor;border-radius:50%;right:3px;"></span></span> Support</h2>
+
+            <div class="ticket-tabs">
+                <div class="ticket-tab active" onclick="switchTicketTab('create')" id="tabCreate">Create Ticket</div>
+                <div class="ticket-tab" onclick="switchTicketTab('list')" id="tabList">My Tickets</div>
+            </div>
+
+            <!-- Create Ticket Form -->
+            <div id="ticketCreateView">
+                <div class="ticket-form">
+                    <textarea id="ticketMessage" placeholder="Describe your issue in detail..."></textarea>
+                    <div class="ticket-photo-upload">
+                        <span style="color: rgba(255,255,255,0.5); font-size: 13px;"><span style="display:inline-block;width:14px;height:11px;border:1.5px solid currentColor;border-radius:2px;position:relative;vertical-align:middle;"><span style="position:absolute;top:3px;left:3px;width:6px;height:4px;background:currentColor;border-radius:1px;"></span></span></span>
+                        <input type="text" id="ticketPhotoUrl" placeholder="Photo URL (optional)">
+                    </div>
+                    <button class="ticket-submit-btn" id="ticketSubmitBtn" onclick="submitTicket()">Submit Ticket</button>
+                </div>
+            </div>
+
+            <!-- Ticket List View -->
+            <div id="ticketListView" style="display: none;">
+                <div id="ticketListContainer"></div>
+            </div>
+
+            <!-- Ticket Detail View -->
+            <div id="ticketDetailView" style="display: none;">
+                <button class="back-btn" onclick="backToTicketList()">&larr; Back to tickets</button>
+                <div id="ticketDetailContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Create animated background particles
+        function createBackground() {
+            const bg = document.getElementById('tradingBg');
+            const particleCount = window.innerWidth <= 768 ? 10 : 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.width = `${Math.random() * 100 + 50}px`;
+                particle.style.height = particle.style.width;
+                particle.style.left = `${Math.random() * 100}%`;
+                particle.style.top = `${Math.random() * 100}%`;
+                particle.style.animationDelay = `${Math.random() * 5}s`;
+                particle.style.animationDuration = `${10 + Math.random() * 10}s`;
+                bg.appendChild(particle);
+            }
+        }
+
+        createBackground();
+
+        // Hide loading screen
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+                // Check if user is logged in
+                checkAuthentication();
+            }, 2000);
+        });
+
+        // Check authentication status
+        function checkAuthentication() {
+            const authToken = localStorage.getItem('finorix_auth_token');
+            const authEmail = localStorage.getItem('finorix_auth_email');
+            const authStatus = localStorage.getItem('finorix_auth_status');
+            
+            if (!authToken || !authEmail) {
+                // Not logged in, redirect to login
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (authStatus !== 'active') {
+                // Not approved, redirect to subscription
+                window.location.href = 'subscription.html';
+                return;
+            }
+
+            // Check device limit
+            const deviceLimit = localStorage.getItem('finorix_device_limit');
+            if (deviceLimit === 'reached') {
+                window.location.href = 'subscription.html';
+                return;
+            }
+            
+            // User is authenticated and active, start bot
+            startSignalUpdates();
+            // Start periodic status monitoring
+            startStatusMonitor();
+        }
+
+        // Periodically check if user is still active (every 10 seconds)
+        let statusMonitorInterval = null;
+        function startStatusMonitor() {
+            // Check immediately, then every 10 seconds
+            statusMonitorInterval = setInterval(async () => {
+                try {
+                    const email = localStorage.getItem('finorix_auth_email');
+                    if (!email) return;
+
+                    const response = await fetch('https://finorixpro.pythonanywhere.com/api/auth/status', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+
+                    const result = await response.json();
+
+                    // Kick out if not active (banned, pending, deleted, etc.)
+                    if (!result.success || result.status !== 'active') {
+                        clearInterval(statusMonitorInterval);
+                        if (result.status === 'not_found') {
+                            // User deleted - clear everything and go to login
+                            localStorage.removeItem('finorix_auth_token');
+                            localStorage.removeItem('finorix_auth_email');
+                            localStorage.removeItem('finorix_auth_status');
+                            localStorage.removeItem('finorix_login_time');
+                            window.location.href = 'login.html';
+                        } else {
+                            localStorage.setItem('finorix_auth_status', result.status || 'banned');
+                            window.location.href = 'subscription.html';
+                        }
+                    }
+                } catch (e) {
+                    // Network error - don't kick user out, just skip this check
+                    console.log('Status check skipped (network issue)');
+                }
+            }, 10000);
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('finorix_auth_token');
+            localStorage.removeItem('finorix_auth_email');
+            localStorage.removeItem('finorix_auth_status');
+            localStorage.removeItem('finorix_login_time');
+            window.location.href = 'login.html';
+        }
+
+        // Get device information
+        function getDeviceInfo() {
+            const userAgent = navigator.userAgent;
+            let deviceType = 'Desktop';
+            let os = 'Unknown';
+            let browser = 'Unknown';
+
+            if (/mobile/i.test(userAgent)) deviceType = 'Mobile';
+            else if (/tablet/i.test(userAgent)) deviceType = 'Tablet';
+
+            if (/windows/i.test(userAgent)) os = 'Windows';
+            else if (/mac/i.test(userAgent)) os = 'MacOS';
+            else if (/linux/i.test(userAgent)) os = 'Linux';
+            else if (/android/i.test(userAgent)) os = 'Android';
+            else if (/ios|iphone|ipad/i.test(userAgent)) os = 'iOS';
+
+            if (/chrome/i.test(userAgent)) browser = 'Chrome';
+            else if (/firefox/i.test(userAgent)) browser = 'Firefox';
+            else if (/safari/i.test(userAgent)) browser = 'Safari';
+            else if (/edge/i.test(userAgent)) browser = 'Edge';
+
+            const screenResolution = `${window.screen.width}x${window.screen.height}`;
+            const fingerprint = btoa(`${userAgent}-${screenResolution}-${navigator.language}-${navigator.platform}`).substring(0, 32);
+
+            return {
+                deviceType, os, browser, screenResolution, userAgent,
+                deviceFingerprint: fingerprint
+            };
+        }
+
+        // ============= TRADING SIGNAL SYSTEM =============
+        
+        let selectedMarket = 'EURUSD';
+        let signalInterval = null;
+
+        const SYMBOLS = {
+            'EURUSD': 'FX:EURUSD',
+            'GBPUSD': 'FX:GBPUSD',
+            'USDJPY': 'FX:USDJPY',
+            'USDCAD': 'FX:USDCAD',
+            'AUDUSD': 'FX:AUDUSD',
+            'NZDUSD': 'FX:NZDUSD',
+            'EURJPY': 'FX:EURJPY',
+            'GBPJPY': 'FX:GBPJPY',
+            'EURGBP': 'FX:EURGBP',
+            'CADJPY': 'FX:CADJPY',
+            'XAUUSD': 'OANDA:XAUUSD',
+            'XAGUSD': 'OANDA:XAGUSD',
+            'USOIL': 'TVC:USOIL',
+            'US30': 'CAPITALCOM:US30',
+            'US500': 'CAPITALCOM:US500',
+            'BTCUSDT': 'BINANCE:BTCUSDT',
+            'ETHUSDT': 'BINANCE:ETHUSDT'
+        };
+
+        // Simple hash function
+        function hash32(str) {
+            let h = 0;
+            for (let i = 0; i < str.length; i++) {
+                h = (Math.imul(31, h) + str.charCodeAt(i)) | 0;
+            }
+            return Math.abs(h);
+        }
+
+        // Simple random number generator
+        function mulberry32(seed) {
+            return function() {
+                seed = (seed + 0x6D2B79F5) | 0;
+                let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+                t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        function randInt(rng, min, max) {
+            return Math.floor(rng() * (max - min + 1)) + min;
+        }
+
+        function getSelectedTimezoneOffsetMinutes() {
+            const select = document.getElementById('timezone-select');
+            const fallbackOffset = 330;
+            if (!select) return fallbackOffset;
+            const parsed = parseInt(select.value, 10);
+            return Number.isFinite(parsed) ? parsed : fallbackOffset;
+        }
+
+        // Generate signal for current minute
+        function generateSignal(market) {
+            // Get time based on selected time zone
+            const now = new Date();
+            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
+            const tzOffsetMinutes = getSelectedTimezoneOffsetMinutes();
+            const displayTime = new Date(utc + (tzOffsetMinutes * 60000));
+            
+            const year = displayTime.getFullYear();
+            const month = String(displayTime.getMonth() + 1).padStart(2, '0');
+            const day = String(displayTime.getDate()).padStart(2, '0');
+            const hours = String(displayTime.getHours()).padStart(2, '0');
+            const minutes = String(displayTime.getMinutes()).padStart(2, '0');
+
+            // Create seed based on time and market
+            const seedStr = `ALTRIX-${year}${month}${day}-${hours}:${minutes}-${market}`;
+            const rng = mulberry32(hash32(seedStr));
+
+            const direction = rng() < 0.5 ? 'CALL' : 'PUT';
+            const accuracy = randInt(rng, 75, 95) + '%';
+
+            return {
+                market: market,
+                direction: direction,
+                accuracy: accuracy,
+                time: `${hours}:${minutes}`,
+                timeframe: '1 Minute'
+            };
+        }
+
+        // Build signal display
+        function buildSignalHTML(signal) {
+            const isCall = signal.direction === 'CALL';
+            const candleClass = isCall ? 'candle-green' : 'candle-red';
+            const directionClass = isCall ? 'signal-call' : 'signal-put';
+            const directionColor = isCall ? '#00ff00' : '#ff0000';
+
+            return `<div style="display: flex; justify-content: space-between; align-items: center;">
+  <div style="flex: 1; text-align: left;">
+    <div style="margin: 0; font-size: 0.9em;">
+      <span style="color: #00ffff; font-weight: 900; text-shadow: 0 0 5px #00ffff;">${signal.market}</span>
+    </div>
+    <div style="margin: 0; font-size: 0.85em;">
+      <span style="color: #ffeb3b; font-weight: 700;"><span style="display:inline-block;width:12px;height:12px;border:2px solid #ffeb3b;border-radius:50%;position:relative;vertical-align:middle;margin-right:2px;"><span style="position:absolute;top:1px;left:4px;width:1.5px;height:5px;background:#ffeb3b;"></span><span style="position:absolute;top:3px;left:3px;width:4px;height:1.5px;background:#ffeb3b;transform-origin:left;transform:rotate(45deg);"></span></span> ${signal.time}</span>
+    </div>
+    <div style="margin: 0; font-size: 0.85em;">
+      <span style="color: #00ff99; font-weight: 700;"><span style="display:inline-block;width:10px;height:10px;border:2px solid #00ff99;border-radius:50%;position:relative;vertical-align:middle;margin-right:2px;"><span style="position:absolute;top:0;left:3px;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:5px solid #00ff99;"></span></span> ${signal.accuracy}</span>
+    </div>
+    <div style="margin: 0; font-size: 0.95em;">
+      <span style="color: ${directionColor}; font-weight: 900; text-shadow: 0 0 8px ${directionColor};"><span style="display:inline-block;width:12px;height:9px;border:2px solid ${directionColor};border-radius:1px;vertical-align:middle;margin-right:2px;position:relative;"><span style="position:absolute;top:1px;left:1px;width:3px;height:3px;background:${directionColor};border-radius:1px;"></span></span> ${signal.direction}</span>
+    </div>
+  </div>
+  <div style="text-align: right;">
+    <div class="signal-direction ${directionClass}">
+      <div class="candlestick ${candleClass}">
+        <div class="wick-top"></div>
+        <div class="candle-body"></div>
+        <div class="wick-bottom"></div>
+      </div>
+    </div>
+  </div>
+</div>`;
+        }
+
+        // Update signal display
+        function updateSignal() {
+            const signal = generateSignal(selectedMarket);
+            const signalElement = document.getElementById('formattedSignal');
+            if (signalElement) {
+                signalElement.innerHTML = buildSignalHTML(signal);
+                console.log(`[ALTRIX] Signal: ${signal.market} ${signal.time} ${signal.direction} ~ ${signal.accuracy}`);
+            }
+        }
+
+        // Initialize TradingView widget
+        let tradingViewLoaded = false;
+        let currentWidget = null;
+
+        function loadTradingView(symbol) {
+            const container = document.getElementById('tradingview-widget');
+            if (!container) return;
+
+            function createWidget() {
+                if (currentWidget) {
+                    try { currentWidget.remove(); } catch(e) {}
+                }
+                container.innerHTML = '';
+                
+                currentWidget = new TradingView.widget({
+                    'container_id': 'tradingview-widget',
+                    'autosize': true,
+                    'symbol': symbol,
+                    'interval': '1',
+                    'timezone': 'Asia/Kolkata',
+                    'theme': 'dark',
+                    'style': '1',
+                    'locale': 'en',
+                    'toolbar_bg': '#0a0a0a',
+                    'enable_publishing': false,
+                    'hide_side_toolbar': false,
+                    'allow_symbol_change': true,
+                    'save_image': true,
+                    'withdateranges': true,
+                    'show_popup_button': true,
+                    'studies': [],
+                    'backgroundColor': 'rgba(0, 0, 0, 0.9)'
+                });
+            }
+
+            if (!tradingViewLoaded) {
+                const script = document.createElement('script');
+                script.src = 'https://s3.tradingview.com/tv.js';
+                script.async = true;
+                script.onload = function() {
+                    tradingViewLoaded = true;
+                    createWidget();
+                };
+                document.head.appendChild(script);
+            } else {
+                createWidget();
+            }
+        }
+
+        // Change market
+        function changeMarket(market) {
+            selectedMarket = market;
+            const symbol = SYMBOLS[market] || 'FX:EURUSD';
+            
+            // Update UI
+            document.querySelectorAll('.market-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            const activeBtn = document.querySelector(`.market-btn[data-market="${market}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            const select = document.getElementById('market-select');
+            if (select) select.value = market;
+            
+            // Update signal and chart
+            updateSignal();
+            loadTradingView(symbol);
+        }
+
+        // Start signal updates
+        function startSignalUpdates() {
+            updateSignal();
+            loadTradingView(SYMBOLS[selectedMarket]);
+            
+            // Update signal every minute
+            const now = new Date();
+            const delay = (60 - now.getSeconds()) * 1000;
+            setTimeout(() => {
+                updateSignal();
+                signalInterval = setInterval(updateSignal, 60000);
+            }, delay);
+        }
+
+        // Market button event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            const marketButtons = document.querySelectorAll('.market-btn');
+            marketButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    changeMarket(this.getAttribute('data-market'));
+                });
+            });
+
+            const marketSelect = document.getElementById('market-select');
+            if (marketSelect) {
+                marketSelect.addEventListener('change', function() {
+                    changeMarket(this.value);
+                });
+            }
+
+            const timezoneSelect = document.getElementById('timezone-select');
+            if (timezoneSelect) {
+                const savedTz = localStorage.getItem('signal_timezone_offset');
+                if (savedTz !== null) {
+                    timezoneSelect.value = savedTz;
+                }
+
+                timezoneSelect.addEventListener('change', function() {
+                    localStorage.setItem('signal_timezone_offset', this.value);
+                    updateSignal();
+                });
+
+                updateSignal();
+            }
+        });
+
+        // =================== SUPPORT TICKET SYSTEM ===================
+        const TICKET_API = 'https://finorixpro.pythonanywhere.com';
+
+        function openTicketModal() {
+            document.getElementById('ticketOverlay').classList.add('show');
+            switchTicketTab('create');
+            checkUnreadReplies();
+            // Mark as read when opening
+            markTicketsRead();
+        }
+
+        function closeTicketModal() {
+            document.getElementById('ticketOverlay').classList.remove('show');
+        }
+
+        document.getElementById('ticketOverlay').addEventListener('click', function(e) {
+            if (e.target === this) closeTicketModal();
+        });
+
+        function switchTicketTab(tab) {
+            document.getElementById('tabCreate').classList.toggle('active', tab === 'create');
+            document.getElementById('tabList').classList.toggle('active', tab === 'list');
+            document.getElementById('ticketCreateView').style.display = tab === 'create' ? 'block' : 'none';
+            document.getElementById('ticketListView').style.display = tab === 'list' ? 'block' : 'none';
+            document.getElementById('ticketDetailView').style.display = 'none';
+
+            if (tab === 'list') loadUserTickets();
+        }
+
+        async function submitTicket() {
+            const message = document.getElementById('ticketMessage').value.trim();
+            const photoUrl = document.getElementById('ticketPhotoUrl').value.trim();
+            const email = localStorage.getItem('finorix_auth_email');
+
+            if (!message) { alert('Please describe your issue'); return; }
+
+            const btn = document.getElementById('ticketSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            try {
+                const res = await fetch(`${TICKET_API}/api/tickets/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, message, photo_url: photoUrl })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    document.getElementById('ticketMessage').value = '';
+                    document.getElementById('ticketPhotoUrl').value = '';
+                    alert('Ticket submitted! We will respond shortly.');
+                    switchTicketTab('list');
+                } else {
+                    alert(data.message || 'Failed to submit');
+                }
+            } catch (e) {
+                alert('Network error. Try again.');
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Submit Ticket';
+        }
+
+        async function loadUserTickets() {
+            const email = localStorage.getItem('finorix_auth_email');
+            const container = document.getElementById('ticketListContainer');
+            container.innerHTML = '<div class="no-tickets">Loading...</div>';
+
+            try {
+                const res = await fetch(`${TICKET_API}/api/tickets/user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (!data.tickets || data.tickets.length === 0) {
+                    container.innerHTML = '<div class="no-tickets">No tickets yet. Create one to get help!</div>';
+                    return;
+                }
+
+                container.innerHTML = data.tickets.map(t => `
+                    <div class="ticket-item" onclick="viewTicketDetail(${t.id})">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span style="color: rgba(255,255,255,0.4); font-size: 11px;">#${t.id} · ${t.created_at}</span>
+                            <span class="ticket-status ${t.status}">${t.status}</span>
+                        </div>
+                        <div class="ticket-msg-text">${truncate(t.message, 80)}</div>
+                        ${t.replies && t.replies.length > 0 ? `<div class="ticket-date"><span style="display:inline-block;width:12px;height:10px;border:1.5px solid currentColor;border-radius:6px 6px 6px 1px;vertical-align:middle;margin-right:2px;"></span> ${t.replies.length} replies</div>` : ''}
+                    </div>
+                `).join('');
+            } catch (e) {
+                container.innerHTML = '<div class="no-tickets">Failed to load tickets</div>';
+            }
+        }
+
+        function truncate(str, max) {
+            return str.length > max ? str.substring(0, max) + '...' : str;
+        }
+
+        async function viewTicketDetail(ticketId) {
+            const email = localStorage.getItem('finorix_auth_email');
+            document.getElementById('ticketListView').style.display = 'none';
+            document.getElementById('ticketCreateView').style.display = 'none';
+            document.getElementById('ticketDetailView').style.display = 'block';
+
+            const content = document.getElementById('ticketDetailContent');
+            content.innerHTML = '<div class="no-tickets">Loading...</div>';
+
+            try {
+                const res = await fetch(`${TICKET_API}/api/tickets/user`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                const ticket = data.tickets.find(t => t.id === ticketId);
+
+                if (!ticket) { content.innerHTML = '<div class="no-tickets">Ticket not found</div>'; return; }
+
+                let html = `
+                    <div style="margin-bottom: 15px;">
+                        <span style="color: rgba(255,255,255,0.4); font-size: 12px;">Ticket #${ticket.id}</span>
+                        <span class="ticket-status ${ticket.status}" style="margin-left: 10px;">${ticket.status}</span>
+                    </div>
+                    <div class="ticket-chat">
+                        <div class="chat-bubble user">
+                            <div class="chat-sender">You</div>
+                            <div>${escapeHtml(ticket.message)}</div>
+                            ${ticket.photo_url ? `<img src="${escapeHtml(ticket.photo_url)}" class="ticket-photo-preview" alt="Photo">` : ''}
+                            <div class="chat-time">${ticket.created_at}</div>
+                        </div>
+                `;
+
+                if (ticket.replies) {
+                    ticket.replies.forEach(r => {
+                        const cls = r.sender === 'admin' ? 'admin' : 'user';
+                        const name = r.sender === 'admin' ? 'Support' : 'You';
+                        html += `
+                            <div class="chat-bubble ${cls}">
+                                <div class="chat-sender">${name}</div>
+                                <div>${escapeHtml(r.message)}</div>
+                                <div class="chat-time">${r.created_at}</div>
+                            </div>
+                        `;
+                    });
+                }
+
+                html += '</div>';
+                content.innerHTML = html;
+            } catch (e) {
+                content.innerHTML = '<div class="no-tickets">Failed to load ticket details</div>';
+            }
+        }
+
+        function backToTicketList() {
+            document.getElementById('ticketDetailView').style.display = 'none';
+            document.getElementById('ticketListView').style.display = 'block';
+            loadUserTickets();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Unread notification checker
+        async function checkUnreadReplies() {
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!email) return;
+
+            try {
+                const res = await fetch(`${TICKET_API}/api/tickets/unread`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+                const dot = document.getElementById('supportNotifDot');
+                if (data.count > 0) {
+                    dot.textContent = data.count;
+                    dot.classList.add('show');
+                } else {
+                    dot.classList.remove('show');
+                }
+            } catch (e) {}
+        }
+
+        async function markTicketsRead() {
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!email) return;
+            try {
+                await fetch(`${TICKET_API}/api/tickets/mark-read`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                document.getElementById('supportNotifDot').classList.remove('show');
+            } catch (e) {}
+        }
+
+        // Check for unread replies every 15 seconds
+        setInterval(checkUnreadReplies, 15000);
+        checkUnreadReplies();
+
+        // =================== SETTINGS PANEL ===================
+        const SETTINGS_API = 'https://finorixpro.pythonanywhere.com';
+        let settingsCountdownInterval = null;
+
+        function openSettings() {
+            document.getElementById('settingsOverlay').classList.add('show');
+            document.getElementById('settingsSidebar').classList.add('open');
+            loadSettingsData();
+        }
+
+        function closeSettings() {
+            document.getElementById('settingsOverlay').classList.remove('show');
+            document.getElementById('settingsSidebar').classList.remove('open');
+            if (settingsCountdownInterval) {
+                clearInterval(settingsCountdownInterval);
+                settingsCountdownInterval = null;
+            }
+        }
+
+        async function loadSettingsData() {
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!email) return;
+
+            document.getElementById('settings-email').textContent = email;
+
+            try {
+                const res = await fetch(`${SETTINGS_API}/api/auth/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('settings-account-number').textContent = data.account_number || '--';
+                    
+                    const statusEl = document.getElementById('settings-status');
+                    const s = (data.status || '').toLowerCase();
+                    statusEl.textContent = s.charAt(0).toUpperCase() + s.slice(1);
+                    statusEl.style.color = s === 'active' ? '#00c853' : s === 'banned' ? '#ff3333' : '#ffa500';
+
+                    // Expiry
+                    const expiryEl = document.getElementById('settings-expiry');
+                    const countdownBox = document.getElementById('settings-countdown-box');
+                    if (data.expiry_date) {
+                        expiryEl.textContent = data.expiry_date;
+                        countdownBox.style.display = 'block';
+                        startSettingsCountdown(data.expiry_date);
+                    } else {
+                        expiryEl.textContent = 'Lifetime';
+                        expiryEl.style.color = '#00c853';
+                        countdownBox.style.display = 'none';
+                    }
+                }
+            } catch (e) {
+                console.log('Settings load error:', e);
+            }
+
+            // Load 2FA status
+            try {
+                const res2 = await fetch(`${SETTINGS_API}/api/auth/2fa-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const d2 = await res2.json();
+                if (d2.success) {
+                    document.getElementById('otp-toggle').checked = d2.otp_enabled;
+                }
+            } catch (e) {
+                // Default to on if endpoint not available
+                document.getElementById('otp-toggle').checked = true;
+            }
+        }
+
+        function startSettingsCountdown(expiryDate) {
+            if (settingsCountdownInterval) clearInterval(settingsCountdownInterval);
+
+            const timerEl = document.getElementById('settings-countdown-timer');
+
+            function update() {
+                const now = new Date();
+                const expiry = new Date(expiryDate);
+                const diff = expiry - now;
+
+                if (diff <= 0) {
+                    timerEl.textContent = 'EXPIRED';
+                    timerEl.style.color = '#ff3333';
+                    clearInterval(settingsCountdownInterval);
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+                const mins = Math.floor((diff / (1000 * 60)) % 60);
+                const secs = Math.floor((diff / 1000) % 60);
+
+                timerEl.textContent = `${days}d ${String(hours).padStart(2,'0')}h ${String(mins).padStart(2,'0')}m ${String(secs).padStart(2,'0')}s`;
+            }
+
+            update();
+            settingsCountdownInterval = setInterval(update, 1000);
+        }
+
+        function showChangePasswordModal() {
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!email) return;
+
+            const overlay = document.createElement('div');
+            overlay.id = 'changepw-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.88);backdrop-filter:blur(6px);z-index:600;display:flex;justify-content:center;align-items:center;';
+            overlay.innerHTML = `
+                <div style="background:linear-gradient(145deg,#0a0a0a,#2a0a1a);border:2px solid var(--pink);border-radius:20px;padding:35px;max-width:400px;width:92%;box-shadow:0 0 40px rgba(255,20,147,0.3);">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <div style="display:inline-flex;align-items:center;justify-content:center;width:50px;height:50px;background:rgba(255,20,147,0.15);border-radius:50%;margin-bottom:12px;"><span style="font-size:24px;">&#128274;</span></div>
+                        <h3 style="color:var(--pink);margin:0 0 5px;">Change Password</h3>
+                        <p style="color:rgba(255,255,255,0.5);font-size:12px;margin:0;">${email}</p>
+                    </div>
+
+                    <!-- Step 1: New Password -->
+                    <div id="cpw-step1">
+                        <label style="color:rgba(255,255,255,0.6);font-size:12px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">New Password</label>
+                        <input type="password" id="cpw-new-password" placeholder="Enter new password (min 6 chars)" style="width:100%;padding:14px 16px;background:rgba(255,20,147,0.06);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;font-size:14px;outline:none;margin-bottom:10px;box-sizing:border-box;" onfocus="this.style.borderColor='var(--pink)'" onblur="this.style.borderColor='rgba(255,20,147,0.3)'">
+                        <label style="color:rgba(255,255,255,0.6);font-size:12px;text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px;">Confirm Password</label>
+                        <input type="password" id="cpw-confirm-password" placeholder="Confirm new password" style="width:100%;padding:14px 16px;background:rgba(255,20,147,0.06);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;font-size:14px;outline:none;margin-bottom:15px;box-sizing:border-box;" onfocus="this.style.borderColor='var(--pink)'" onblur="this.style.borderColor='rgba(255,20,147,0.3)'">
+                        <button id="cpw-send-otp-btn" onclick="cpwSendOTP()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--pink),var(--pink-dark));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;">Send OTP & Continue</button>
+                    </div>
+
+                    <!-- Step 2: OTP Verification -->
+                    <div id="cpw-step2" style="display:none;">
+                        <p style="color:rgba(255,255,255,0.6);font-size:13px;text-align:center;margin-bottom:15px;">Enter the OTP sent to your email</p>
+                        <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;">
+                            <input type="text" id="cpw-otp-1" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value)document.getElementById('cpw-otp-2').focus();">
+                            <input type="text" id="cpw-otp-2" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value)document.getElementById('cpw-otp-3').focus();">
+                            <input type="text" id="cpw-otp-3" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value)document.getElementById('cpw-otp-4').focus();">
+                            <input type="text" id="cpw-otp-4" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                        </div>
+                        <button id="cpw-confirm-btn" onclick="cpwConfirmChange()" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--pink),var(--pink-dark));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:all 0.3s;">Change Password</button>
+                    </div>
+
+                    <button onclick="closeChangePasswordModal()" style="width:100%;padding:10px;background:none;border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:rgba(255,255,255,0.6);font-size:13px;cursor:pointer;margin-top:10px;">Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => document.getElementById('cpw-new-password').focus(), 100);
+        }
+
+        function closeChangePasswordModal() {
+            const el = document.getElementById('changepw-overlay');
+            if (el) el.remove();
+        }
+
+        async function cpwSendOTP() {
+            const newPw = document.getElementById('cpw-new-password').value;
+            const confirmPw = document.getElementById('cpw-confirm-password').value;
+            const email = localStorage.getItem('finorix_auth_email');
+
+            if (!newPw || newPw.length < 6) {
+                showSettingsPopup('Error', 'Password must be at least 6 characters');
+                return;
+            }
+            if (newPw !== confirmPw) {
+                showSettingsPopup('Error', 'Passwords do not match');
+                return;
+            }
+
+            const btn = document.getElementById('cpw-send-otp-btn');
+            btn.disabled = true;
+            btn.textContent = 'Sending OTP...';
+
+            try {
+                const res = await fetch(`${SETTINGS_API}/api/auth/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, purpose: 'password_change', force: true })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    document.getElementById('cpw-step1').style.display = 'none';
+                    document.getElementById('cpw-step2').style.display = 'block';
+                    setTimeout(() => document.getElementById('cpw-otp-1').focus(), 100);
+                } else {
+                    btn.disabled = false;
+                    btn.textContent = 'Send OTP & Continue';
+                    showSettingsPopup('Error', data.message || 'Failed to send OTP');
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.textContent = 'Send OTP & Continue';
+                showSettingsPopup('Error', 'Connection error');
+            }
+        }
+
+        async function cpwConfirmChange() {
+            const email = localStorage.getItem('finorix_auth_email');
+            const newPw = document.getElementById('cpw-new-password').value;
+            const otp = [1,2,3,4].map(i => document.getElementById('cpw-otp-' + i).value).join('');
+
+            if (otp.length !== 4) {
+                showSettingsPopup('Error', 'Enter the 4-digit OTP');
+                return;
+            }
+
+            const btn = document.getElementById('cpw-confirm-btn');
+            btn.disabled = true;
+            btn.textContent = 'Changing...';
+
+            try {
+                const res = await fetch(`${SETTINGS_API}/api/auth/change-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp, new_password: newPw })
+                });
+                const data = await res.json();
+
+                closeChangePasswordModal();
+
+                if (data.success) {
+                    showSettingsPopup('Success', 'Password changed successfully!');
+                } else {
+                    showSettingsPopup('Error', data.message || 'Failed to change password');
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.textContent = 'Change Password';
+                showSettingsPopup('Error', 'Connection error');
+            }
+        }
+
+        async function handle2FAToggle(checkbox) {
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!email) return;
+
+            const newState = checkbox.checked; // true = enable, false = disable
+
+            if (!newState) {
+                // User wants to DISABLE 2FA -> need OTP verification first
+                checkbox.checked = true; // revert until verified
+                checkbox.disabled = true;
+
+                // Show loading on the toggle row
+                const toggleRow = checkbox.closest('.toggle-row');
+                const origDesc = toggleRow.querySelector('.toggle-desc').textContent;
+                toggleRow.querySelector('.toggle-desc').innerHTML = '<span style="color:var(--pink);">Sending OTP...</span>';
+                toggleRow.style.opacity = '0.7';
+                toggleRow.style.pointerEvents = 'none';
+
+                // Send OTP
+                try {
+                    const sendRes = await fetch(`${SETTINGS_API}/api/auth/send-otp`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, purpose: '2fa_disable', force: true })
+                    });
+                    const sendData = await sendRes.json();
+                    if (!sendData.success) {
+                        toggleRow.querySelector('.toggle-desc').textContent = origDesc;
+                        toggleRow.style.opacity = '1';
+                        toggleRow.style.pointerEvents = '';
+                        checkbox.disabled = false;
+                        showSettingsPopup('Error', sendData.message || 'Failed to send OTP');
+                        return;
+                    }
+                } catch (e) {
+                    toggleRow.querySelector('.toggle-desc').textContent = origDesc;
+                    toggleRow.style.opacity = '1';
+                    toggleRow.style.pointerEvents = '';
+                    checkbox.disabled = false;
+                    showSettingsPopup('Error', 'Failed to send OTP');
+                    return;
+                }
+
+                // Restore toggle row
+                toggleRow.querySelector('.toggle-desc').textContent = origDesc;
+                toggleRow.style.opacity = '1';
+                toggleRow.style.pointerEvents = '';
+                checkbox.disabled = false;
+
+                // Show OTP prompt
+                show2FAOTPPrompt(email);
+            } else {
+                // User wants to ENABLE 2FA -> no OTP needed, just toggle on
+                try {
+                    const res = await fetch(`${SETTINGS_API}/api/auth/2fa-toggle`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, enabled: true })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        showSettingsPopup('Success', 'Login OTP verification enabled.');
+                    } else {
+                        checkbox.checked = false;
+                        showSettingsPopup('Error', data.message || 'Failed');
+                    }
+                } catch (e) {
+                    checkbox.checked = false;
+                    showSettingsPopup('Error', 'Connection error');
+                }
+            }
+        }
+
+        function show2FAOTPPrompt(email) {
+            // Create OTP modal overlay
+            const overlay = document.createElement('div');
+            overlay.id = 'otp2fa-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(6px);z-index:600;display:flex;justify-content:center;align-items:center;';
+            overlay.innerHTML = `
+                <div style="background:linear-gradient(145deg,#0a0a0a,#2a0a1a);border:2px solid var(--pink);border-radius:20px;padding:35px;max-width:380px;width:90%;text-align:center;box-shadow:0 0 40px rgba(255,20,147,0.3);">
+                    <div style="display:inline-flex;align-items:center;justify-content:center;width:50px;height:50px;background:rgba(255,20,147,0.15);border-radius:50%;margin-bottom:15px;">
+                        <span style="font-size:24px;">&#128274;</span>
+                    </div>
+                    <h3 style="color:var(--pink);margin-bottom:8px;">Verify to Disable OTP</h3>
+                    <p style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:20px;">Enter the OTP sent to your email to confirm disabling 2FA.</p>
+                    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:20px;">
+                        <input type="text" id="otp2fa-1" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value)document.getElementById('otp2fa-2').focus();">
+                        <input type="text" id="otp2fa-2" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value)document.getElementById('otp2fa-3').focus();">
+                        <input type="text" id="otp2fa-3" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');if(this.value)document.getElementById('otp2fa-4').focus();">
+                        <input type="text" id="otp2fa-4" maxlength="1" style="width:48px;height:55px;text-align:center;font-size:22px;font-weight:900;background:rgba(255,20,147,0.08);border:2px solid rgba(255,20,147,0.3);border-radius:10px;color:#fff;outline:none;" oninput="this.value=this.value.replace(/[^0-9]/g,'');">
+                    </div>
+                    <button id="otp2fa-confirm-btn" onclick="confirm2FADisable('${email}')" style="width:100%;padding:14px;background:linear-gradient(135deg,var(--pink),var(--pink-dark));color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;margin-bottom:10px;transition:all 0.3s;">Confirm Disable</button>
+                    <button onclick="close2FAOTPPrompt()" style="width:100%;padding:10px;background:none;border:1px solid rgba(255,255,255,0.2);border-radius:10px;color:rgba(255,255,255,0.6);font-size:13px;cursor:pointer;">Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+            setTimeout(() => document.getElementById('otp2fa-1').focus(), 100);
+        }
+
+        function close2FAOTPPrompt() {
+            const el = document.getElementById('otp2fa-overlay');
+            if (el) el.remove();
+        }
+
+        async function confirm2FADisable(email) {
+            const otp = [1,2,3,4].map(i => document.getElementById('otp2fa-' + i).value).join('');
+            if (otp.length !== 4) {
+                showSettingsPopup('Error', 'Enter the 4-digit OTP');
+                return;
+            }
+
+            const btn = document.getElementById('otp2fa-confirm-btn');
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+
+            try {
+                // Verify OTP first
+                const verifyRes = await fetch(`${SETTINGS_API}/api/auth/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, otp })
+                });
+                const verifyData = await verifyRes.json();
+
+                if (!verifyData.success) {
+                    btn.disabled = false;
+                    btn.textContent = 'Confirm Disable';
+                    showSettingsPopup('Error', verifyData.message || 'Invalid OTP');
+                    return;
+                }
+
+                // OTP verified, now disable 2FA
+                const toggleRes = await fetch(`${SETTINGS_API}/api/auth/2fa-toggle`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, enabled: false })
+                });
+                const toggleData = await toggleRes.json();
+
+                close2FAOTPPrompt();
+
+                if (toggleData.success) {
+                    document.getElementById('otp-toggle').checked = false;
+                    showSettingsPopup('Success', 'Login OTP verification disabled.');
+                } else {
+                    showSettingsPopup('Error', toggleData.message || 'Failed');
+                }
+            } catch (e) {
+                btn.disabled = false;
+                btn.textContent = 'Confirm Disable';
+                showSettingsPopup('Error', 'Connection error');
+            }
+        }
+
+        function showSettingsPopup(title, message) {
+            // Reuse a simple alert-style popup
+            const overlay = document.createElement('div');
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);z-index:700;display:flex;justify-content:center;align-items:center;';
+            overlay.innerHTML = `
+                <div style="background:linear-gradient(145deg,#0a0a0a,#2a0a1a);border:2px solid var(--pink);border-radius:16px;padding:30px;max-width:340px;width:90%;text-align:center;box-shadow:0 0 30px rgba(255,20,147,0.3);">
+                    <h3 style="color:${title === 'Error' ? '#ff3333' : '#00c853'};margin-bottom:10px;">${title}</h3>
+                    <p style="color:rgba(255,255,255,0.8);font-size:14px;margin-bottom:20px;line-height:1.5;">${message}</p>
+                    <button onclick="this.closest('div').parentElement.remove()" style="padding:10px 30px;background:linear-gradient(135deg,var(--pink),var(--pink-dark));color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;">OK</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+    </script>
+    <script src="/protect.js"></script>
+</body>
+</html>
