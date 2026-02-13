@@ -1,0 +1,30 @@
+{
+  "name": "Finorix Pro",
+  "short_name": "Finorix Pro",
+  "description": "Finorix Pro Trading Signal App",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0a",
+  "theme_color": "#ff1493",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png",
+      "sizes": "128x128",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

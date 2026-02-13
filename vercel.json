@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "no-referrer" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
+        { "key": "Strict-Transport-Security", "value": "max-age=31536000; includeSubDomains" },
+        { "key": "X-Powered-By", "value": "" },
+        { "key": "Server", "value": "" }
+      ]
+    },
+    {
+      "source": "/service-worker.js",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Service-Worker-Allowed", "value": "/" }
+      ]
+    }
+  ],
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/", "destination": "/login.html" }
+  ],
+  "redirects": [
+    { "source": "/Server/(.*)", "destination": "/login", "statusCode": 301 },
+    { "source": "/.env", "destination": "/login", "statusCode": 301 },
+    { "source": "/.git/(.*)", "destination": "/login", "statusCode": 301 }
+  ],
+  "trailingSlash": false
+}
