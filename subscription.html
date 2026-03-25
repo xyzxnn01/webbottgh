@@ -663,7 +663,7 @@
 
             <div style="margin-top:15px;background:rgba(255,20,147,0.06);border:1.5px solid rgba(255,20,147,0.25);border-radius:14px;padding:20px;">
                 <p style="color:var(--pink);font-weight:700;font-size:15px;margin-bottom:12px;"><i class="fas fa-key" style="margin-right:6px;"></i> Verify Your Broker Account</p>
-                <input type="text" id="broker-account-input" placeholder="Enter Pocket Option Account ID" inputmode="numeric" pattern="[0-9]*" style="
+                <input type="text" id="broker-account-input" placeholder="Enter Pocket Option Account ID" inputmode="numeric" style="
                     padding:14px 16px;
                     width:100%;
                     background:rgba(0,0,0,0.7);
@@ -674,6 +674,8 @@
                     margin-bottom:12px;
                     transition:all 0.3s;
                     outline:none;
+                    -webkit-user-select:text;
+                    user-select:text;
                 ">
                 <div id="broker-error" style="color:#ff5555;font-size:13px;margin-bottom:10px;display:none;"></div>
                 <button id="broker-verify-btn" onclick="verifyBrokerAccount()" style="
