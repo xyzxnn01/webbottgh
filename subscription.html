@@ -1261,7 +1261,11 @@
                     created_at: Date.now()
                 };
 
-                localStorage.setItem('finorix_pending_binance', orderData.order_id);
+                localStorage.setItem('finorix_pending_binance', JSON.stringify({
+                    order_id: orderData.order_id,
+                    amount: orderData.amount,
+                    created_at: Date.now()
+                }));
                 showBinanceCheckout();
 
                 // Start polling for payment
@@ -1881,21 +1885,29 @@
 
                 if (paymentResult === 'binance-checking') {
                     // Returned from Binance Pay — check if there's a pending order
-                    const pendingOrder = localStorage.getItem('finorix_pending_binance');
-                    if (pendingOrder) {
+                    const pendingRaw = localStorage.getItem('finorix_pending_binance');
+                    if (pendingRaw) {
+                        let pendingData;
+                        try { pendingData = JSON.parse(pendingRaw); } catch(e) {
+                            // Legacy: plain order_id string
+                            pendingData = { order_id: pendingRaw, amount: null, created_at: Date.now() - 300000 };
+                        }
                         showPopup('Checking Payment...', 'Verifying your Binance Pay payment...', '<i class="fas fa-spinner fa-spin" style="color:#f0b90b;font-size:50px;"></i>');
-                        // Re-fetch binance info and poll
+                        // Re-fetch binance info and resume poll with checkout overlay
                         (async () => {
                             try {
                                 const infoRes = await fetch(`${AUTH_API_BASE}/api/auth/binance-info`);
                                 const infoData = await infoRes.json();
                                 binanceOrderInfo = {
-                                    order_id: pendingOrder,
+                                    order_id: pendingData.order_id,
+                                    amount: pendingData.amount || cachedPriceUSD || '0',
                                     api_key: infoData.api_key,
                                     api_secret: infoData.api_secret,
                                     uid: infoData.uid,
-                                    account_name: infoData.account_name
+                                    account_name: infoData.account_name,
+                                    created_at: pendingData.created_at || (Date.now() - 300000)
                                 };
+                                showBinanceCheckout();
                                 startBinancePoll();
                             } catch(e) { console.error(e); }
                         })();
