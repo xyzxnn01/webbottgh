@@ -1394,9 +1394,41 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> Checking...';
             statusEl.style.display = 'block';
-            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i> Verifying transaction...';
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i> Checking Order ID...';
 
             try {
+                // Step 1: Check if this Order ID was already used (server-side check FIRST)
+                let checkPassed = false;
+                try {
+                    const checkRes = await fetch(`${AUTH_API_BASE}/api/auth/check-binance-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ binance_order_id: userOrderId })
+                    });
+                    const checkData = await checkRes.json();
+                    if (checkData.used === true) {
+                        statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> ' + (checkData.message || 'This Order ID has already been used.');
+                        if (input) input.style.borderColor = '#ff5555';
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment';
+                        return;
+                    }
+                    if (checkData.used === false) {
+                        checkPassed = true;
+                    }
+                } catch(checkErr) {
+                    console.error('[BinancePay] Pre-check error:', checkErr);
+                }
+
+                if (!checkPassed) {
+                    statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#ffa726;margin-right:4px;"></i> Server verification failed. Please try again.';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment';
+                    return;
+                }
+
+                // Step 2: Check Binance API for the transaction
+                statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i> Verifying with Binance...';
                 const res = await fetch(BINANCEPAY_PROXY, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
