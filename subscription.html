@@ -1241,6 +1241,18 @@
                     return;
                 }
 
+                if (!infoData.api_key || !infoData.api_secret) {
+                    console.error('[BinancePay] Missing API credentials:', { api_key: !!infoData.api_key, api_secret: !!infoData.api_secret });
+                    errorEl.textContent = 'Binance Pay is not configured. Please contact support.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                console.log('[BinancePay] Creating order:', { order_id: orderData.order_id, amount: orderData.amount, has_key: !!infoData.api_key, has_secret: !!infoData.api_secret });
+
                 // Step 2: Create Binance Pay order via Vercel proxy
                 const bnbRes = await fetch(BINANCEPAY_PROXY, {
                     method: 'POST',
@@ -1257,11 +1269,26 @@
                         cancelUrl: window.location.origin + '/subscription?payment=cancelled'
                     })
                 });
-                const bnbData = await bnbRes.json();
+
+                let bnbData;
+                const bnbText = await bnbRes.text();
+                try {
+                    bnbData = JSON.parse(bnbText);
+                } catch(e) {
+                    console.error('[BinancePay] Proxy returned non-JSON:', bnbText.substring(0, 500));
+                    errorEl.textContent = 'Binance Pay proxy error (HTTP ' + bnbRes.status + '). Please try again.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+                console.log('[BinancePay] Proxy response:', JSON.stringify(bnbData));
 
                 if (bnbData.status !== 'SUCCESS' || !bnbData.data) {
                     console.error('[BinancePay] Create order failed:', bnbData);
-                    errorEl.textContent = bnbData.errorMessage || 'Failed to create Binance Pay order. Please try again.';
+                    const errMsg = bnbData.errorMessage || bnbData.message || bnbData.code || 'Failed to create Binance Pay order. Please try again.';
+                    errorEl.textContent = errMsg;
                     errorEl.style.display = 'block';
                     btn.disabled = false;
                     btnText.textContent = 'PAY — ACTIVATE NOW';
