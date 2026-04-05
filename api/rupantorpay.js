@@ -1,9 +1,5 @@
 // Vercel Serverless Function — RupantorPay Proxy
-// Browser can't call RupantorPay directly (CORS), so this proxies the request server-side
-
-const RUPANTORPAY_API_KEY = 'AU2em4XZBL7aIJQfR6tzP59W7OeJ4MIKmMGzxLK0SiyFkLip6X';
-const RUPANTORPAY_CHECKOUT_URL = 'https://payment.rupantorpay.com/api/payment/checkout';
-const RUPANTORPAY_VERIFY_URL = 'https://payment.rupantorpay.com/api/payment/verify-payment';
+// Proxies requests to RupantorPay API (avoids CORS + PythonAnywhere outbound block)
 
 module.exports = async (req, res) => {
     // CORS headers
@@ -22,37 +18,61 @@ module.exports = async (req, res) => {
     const { action, ...payload } = req.body || {};
 
     if (!action) {
-        return res.status(400).json({ success: false, message: 'Missing action parameter' });
+        return res.status(400).json({ success: false, message: 'Missing action' });
     }
 
-    const headers = {
-        'accept': 'application/json',
-        'X-API-KEY': RUPANTORPAY_API_KEY,
-        'content-type': 'application/json',
-    };
-
     try {
-        let targetUrl;
-
         if (action === 'checkout') {
-            targetUrl = RUPANTORPAY_CHECKOUT_URL;
+            // Create RupantorPay checkout
+            const { api_key, amount, callback_url, success_url, cancel_url, customer_name, customer_email, order_id } = payload;
+
+            if (!api_key || !amount) {
+                return res.status(400).json({ success: false, message: 'Missing api_key or amount' });
+            }
+
+            const body = {
+                api_key,
+                amount: parseFloat(amount),
+                callback_url: callback_url || '',
+                success_url: success_url || '',
+                cancel_url: cancel_url || '',
+                customer_name: customer_name || '',
+                customer_email: customer_email || '',
+                metadata: JSON.stringify({ order_id: order_id || '' })
+            };
+
+            const response = await fetch('https://payment.rupantorpay.com/api/payment/checkout', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            const data = await response.json();
+            return res.status(200).json(data);
+
         } else if (action === 'verify') {
-            targetUrl = RUPANTORPAY_VERIFY_URL;
+            // Verify RupantorPay payment
+            const { api_key, order_id } = payload;
+
+            if (!api_key || !order_id) {
+                return res.status(400).json({ success: false, message: 'Missing api_key or order_id' });
+            }
+
+            const response = await fetch('https://payment.rupantorpay.com/api/payment/verify-payment', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ api_key, order_id })
+            });
+
+            const data = await response.json();
+            return res.status(200).json(data);
+
         } else {
-            return res.status(400).json({ success: false, message: 'Invalid action' });
+            return res.status(400).json({ success: false, message: 'Invalid action. Use checkout or verify' });
         }
-
-        const response = await fetch(targetUrl, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(payload),
-        });
-
-        const data = await response.json();
-        return res.status(200).json(data);
 
     } catch (error) {
         console.error('[RupantorPay Proxy] Error:', error.message);
-        return res.status(502).json({ success: false, message: 'Payment gateway temporarily unavailable' });
+        return res.status(502).json({ success: false, message: 'RupantorPay temporarily unavailable' });
     }
 };
