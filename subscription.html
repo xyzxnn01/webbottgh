@@ -1297,7 +1297,7 @@
                             <img src="https://cdn.jsdelivr.net/gh/nicehash/Logos@main/Currencies/BNB.svg" style="width:32px;" onerror="this.outerHTML='<i class=\\'fab fa-bitcoin\\' style=\\'font-size:28px;color:#f0b90b;\\'></i>'">
                         </div>
                         <h3 style="color:white;font-size:18px;font-weight:800;margin:4px 0;">Binance Pay</h3>
-                        <p style="color:rgba(255,255,255,0.5);font-size:12px;">নিচের Pay ID তে USDT পাঠান</p>
+                        <p style="color:rgba(255,255,255,0.5);font-size:12px;">Send USDT to the Pay ID below</p>
                     </div>
 
                     <!-- Pay ID -->
@@ -1314,7 +1314,7 @@
 
                     <!-- Amount -->
                     <div style="background:rgba(240,185,11,0.08);border:1px solid rgba(240,185,11,0.2);border-radius:14px;padding:16px;text-align:center;margin-bottom:18px;">
-                        <p style="color:rgba(255,255,255,0.5);font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">পেমেন্ট এমাউন্ট</p>
+                        <p style="color:rgba(255,255,255,0.5);font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Payment Amount</p>
                         <p style="font-size:32px;font-weight:900;color:#f0b90b;margin:0;">${binanceOrderInfo.amount} <span style="font-size:16px;color:rgba(255,255,255,0.5);">USDT</span></p>
                         <button onclick="copyText('${binanceOrderInfo.amount}')" style="background:rgba(240,185,11,0.15);border:1px solid rgba(240,185,11,0.3);border-radius:8px;color:#f0b90b;padding:6px 16px;font-size:12px;cursor:pointer;font-weight:600;margin-top:8px;">
                             <i class="fas fa-copy" style="margin-right:4px;"></i> Copy Amount
@@ -1323,30 +1323,30 @@
 
                     <!-- Steps -->
                     <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:12px;padding:14px;margin-bottom:18px;">
-                        <p style="color:var(--green);font-weight:700;font-size:13px;margin-bottom:10px;"><i class="fas fa-list-ol" style="margin-right:6px;"></i> কিভাবে পেমেন্ট করবেন:</p>
+                        <p style="color:var(--green);font-weight:700;font-size:13px;margin-bottom:10px;"><i class="fas fa-list-ol" style="margin-right:6px;"></i> How to Pay:</p>
                         <div style="color:rgba(255,255,255,0.7);font-size:12px;line-height:2;">
                             <p><span style="color:#f0b90b;font-weight:700;">①</span> Binance App → Pay → Send</p>
                             <p><span style="color:#f0b90b;font-weight:700;">②</span> Pay ID: <strong style="color:white;">${binanceOrderInfo.uid}</strong></p>
                             <p><span style="color:#f0b90b;font-weight:700;">③</span> Amount: <strong style="color:#f0b90b;">${binanceOrderInfo.amount} USDT</strong></p>
-                            <p><span style="color:var(--green);font-weight:700;">④</span> পেমেন্ট কনফার্ম করুন</p>
-                            <p><span style="color:var(--green);font-weight:700;">⑤</span> নিচে Order ID দিয়ে ভেরিফাই করুন</p>
+                            <p><span style="color:var(--green);font-weight:700;">④</span> Confirm & Send Payment</p>
+                            <p><span style="color:var(--green);font-weight:700;">⑤</span> Enter Order ID below to verify</p>
                         </div>
                     </div>
 
                     <!-- Order ID Input -->
                     <div style="background:rgba(255,20,147,0.06);border:1.5px solid rgba(255,20,147,0.25);border-radius:12px;padding:16px;margin-bottom:14px;">
-                        <p style="color:var(--pink);font-size:12px;font-weight:700;margin-bottom:10px;"><i class="fas fa-receipt" style="margin-right:6px;"></i> পেমেন্ট করার পর Order ID দিন</p>
-                        <input type="text" id="binance-order-id-input" placeholder="Binance Order ID লিখুন..."
+                        <p style="color:var(--pink);font-size:12px;font-weight:700;margin-bottom:10px;"><i class="fas fa-receipt" style="margin-right:6px;"></i> Enter Order ID after payment</p>
+                        <input type="text" id="binance-order-id-input" placeholder="Enter Binance Order ID..."
                             style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(240,185,11,0.3);background:rgba(0,0,0,0.3);color:white;font-size:15px;font-weight:600;font-family:monospace;outline:none;box-sizing:border-box;transition:border-color 0.3s;"
                             onfocus="this.style.borderColor='#f0b90b'" onblur="this.style.borderColor='rgba(240,185,11,0.3)'">
-                        <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:8px 0 0;">Binance App → Pay → History থেকে Order ID কপি করুন</p>
+                        <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:8px 0 0;">Binance App → Pay → History → Copy the Order ID</p>
                     </div>
 
                     <p id="binance-verify-status" style="color:rgba(255,255,255,0.4);font-size:12px;text-align:center;margin-bottom:10px;display:none;"></p>
 
                     <button id="binance-verify-btn" onclick="verifyBinancePayment()"
                         style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#f0b90b,#d4a200);color:#000;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;transition:opacity 0.3s;">
-                        <i class="fas fa-search" style="margin-right:6px;"></i> ভেরিফাই করুন
+                        <i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment
                     </button>
 
                     <button onclick="closeBinanceCheckout()" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;padding:10px 24px;">Cancel</button>
@@ -1385,16 +1385,16 @@
 
             if (!userOrderId) {
                 statusEl.style.display = 'block';
-                statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ff5555;margin-right:4px;"></i> Order ID লিখুন!';
+                statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ff5555;margin-right:4px;"></i> Please enter your Order ID!';
                 if (input) { input.style.borderColor = '#ff5555'; input.focus(); }
                 return;
             }
 
             // Show loading
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> চেক করা হচ্ছে...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> Checking...';
             statusEl.style.display = 'block';
-            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i> Transaction চেক করা হচ্ছে...';
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i> Verifying transaction...';
 
             try {
                 const res = await fetch(BINANCEPAY_PROXY, {
@@ -1430,57 +1430,64 @@
 
                         if (paidAmount < MIN_AMOUNT) {
                             // Paid less than $2 — reject
-                            const shortfall = (expectedAmount - paidAmount).toFixed(2);
-                            statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> আপনি মাত্র $' + paidAmount.toFixed(2) + ' পে করেছেন। সর্বনিম্ন $' + MIN_AMOUNT + ' প্রয়োজন। আরো $' + shortfall + ' পেমেন্ট করুন।';
+                            const needed = (MIN_AMOUNT - paidAmount).toFixed(2);
+                            statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> You paid only $' + paidAmount.toFixed(2) + '. Minimum $' + MIN_AMOUNT + ' required. Please pay $' + needed + ' more.';
                             if (input) input.style.borderColor = '#ff5555';
                         } else {
                             // Paid $2 or more — activate
-                            const extra = paidAmount - expectedAmount;
-                            let successMsg = 'আপনার Binance Pay পেমেন্ট কনফার্ম হয়েছে! সাবস্ক্রিপশন একটিভ হয়েছে।';
-                            if (extra > 0.01) {
-                                successMsg = 'পেমেন্ট কনফার্ম! আপনি এক্সট্রা $' + extra.toFixed(2) + ' পে করেছেন। সাবস্ক্রিপশন একটিভ হয়েছে।';
-                            } else if (paidAmount < expectedAmount - 0.01) {
-                                successMsg = 'পেমেন্ট কনফার্ম! আপনি $' + paidAmount.toFixed(2) + ' পে করেছেন ($' + expectedAmount.toFixed(2) + ' এর জায়গায়)। সাবস্ক্রিপশন একটিভ হয়েছে।';
-                            }
+                            statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green);margin-right:4px;"></i> Payment found! Activating...';
 
-                            statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green);margin-right:4px;"></i> পেমেন্ট পাওয়া গেছে! একটিভ করা হচ্ছে...';
-
-                            // Activate on server
-                            await fetch(`${AUTH_API_BASE}/api/auth/activate-binance-payment`, {
+                            // Activate on server (server checks for duplicate binance_order_id)
+                            const activateRes = await fetch(`${AUTH_API_BASE}/api/auth/activate-binance-payment`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
                                     order_id: binanceOrderInfo.order_id,
                                     email: localStorage.getItem('finorix_auth_email'),
-                                    prepay_id: match.transactionId || match.orderId || ''
+                                    prepay_id: match.transactionId || match.orderId || '',
+                                    binance_order_id: userOrderId
                                 })
                             });
+                            const activateData = await activateRes.json();
 
-                            localStorage.removeItem('finorix_pending_binance');
-                            localStorage.setItem('finorix_auth_status', 'active');
-                            closeBinanceCheckout();
-                            showPopup('পেমেন্ট সফল!', successMsg, '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
-                            setTimeout(() => checkStatus(), 2000);
-                            return;
+                            if (!activateData.success) {
+                                statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> ' + (activateData.message || 'Activation failed.');
+                                if (input) input.style.borderColor = '#ff5555';
+                            } else {
+                                const extra = paidAmount - expectedAmount;
+                                let successMsg = 'Your Binance Pay payment is confirmed! Subscription activated.';
+                                if (extra > 0.01) {
+                                    successMsg = 'Payment confirmed! You paid an extra $' + extra.toFixed(2) + '. Subscription activated.';
+                                } else if (paidAmount < expectedAmount - 0.01) {
+                                    successMsg = 'Payment confirmed! You paid $' + paidAmount.toFixed(2) + ' (instead of $' + expectedAmount.toFixed(2) + '). Subscription activated.';
+                                }
+
+                                localStorage.removeItem('finorix_pending_binance');
+                                localStorage.setItem('finorix_auth_status', 'active');
+                                closeBinanceCheckout();
+                                showPopup('Payment Successful!', successMsg, '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                                setTimeout(() => checkStatus(), 2000);
+                                return;
+                            }
                         }
                     } else {
-                        statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> এই Order ID দিয়ে কোনো USDT পেমেন্ট পাওয়া যায়নি।';
+                        statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> No USDT payment found with this Order ID.';
                         if (input) input.style.borderColor = '#ff5555';
                     }
                 } else if (data.code && data.code !== '000000') {
                     console.error('[BinancePay] API error:', data.code, data.msg);
                     statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#ffa726;margin-right:4px;"></i> API Error: ' + (data.msg || 'Unknown error');
                 } else {
-                    statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> কোনো Transaction পাওয়া যায়নি।';
+                    statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> No transactions found.';
                 }
             } catch (e) {
                 console.error('[BinancePay] Verify error:', e);
-                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#ffa726;margin-right:4px;"></i> Connection error। আবার চেষ্টা করুন।';
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#ffa726;margin-right:4px;"></i> Connection error. Please try again.';
             }
 
             // Re-enable button
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i> ভেরিফাই করুন';
+            btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment';
         }
 
         // ===== RUPANTORPAY BDT PAYMENT =====
