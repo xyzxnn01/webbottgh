@@ -782,7 +782,7 @@
             </div>
 
             <!-- Binance Pay Option -->
-            <button onclick="selectPaymentMethod('binance')" style="width:100%;padding:16px 18px;background:rgba(240,185,11,0.08);border:1.5px solid rgba(240,185,11,0.25);border-radius:14px;color:white;cursor:pointer;display:flex;align-items:center;gap:14px;margin-bottom:12px;transition:all 0.3s;">
+            <button id="pm-btn-binance" onclick="selectPaymentMethod('binance')" style="display:none;width:100%;padding:16px 18px;background:rgba(240,185,11,0.08);border:1.5px solid rgba(240,185,11,0.25);border-radius:14px;color:white;cursor:pointer;align-items:center;gap:14px;margin-bottom:12px;transition:all 0.3s;">
                 <div style="width:48px;height:48px;border-radius:12px;background:rgba(240,185,11,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                     <img src="https://cdn.jsdelivr.net/gh/nicehash/Logos@main/Currencies/BNB.svg" style="width:28px;height:28px;" onerror="this.outerHTML='<i class=\'fab fa-bitcoin\' style=\'font-size:22px;color:#f0b90b;\'></i>'">
                 </div>
@@ -794,8 +794,8 @@
                 <i class="fas fa-chevron-right" style="color:rgba(255,255,255,0.3);"></i>
             </button>
 
-            <!-- USDT Option -->
-            <button onclick="selectPaymentMethod('usdt')" style="width:100%;padding:16px 18px;background:rgba(0,230,118,0.08);border:1.5px solid rgba(0,230,118,0.25);border-radius:14px;color:white;cursor:pointer;display:flex;align-items:center;gap:14px;margin-bottom:20px;transition:all 0.3s;">
+            <!-- Crypto (OxaPay) Option -->
+            <button id="pm-btn-crypto" onclick="selectPaymentMethod('usdt')" style="display:none;width:100%;padding:16px 18px;background:rgba(0,230,118,0.08);border:1.5px solid rgba(0,230,118,0.25);border-radius:14px;color:white;cursor:pointer;align-items:center;gap:14px;margin-bottom:12px;transition:all 0.3s;">
                 <div style="width:48px;height:48px;border-radius:12px;background:rgba(0,230,118,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
                     <i class="fas fa-coins" style="font-size:20px;color:#00e676;"></i>
                 </div>
@@ -803,6 +803,19 @@
                     <div style="font-weight:700;font-size:15px;">Crypto</div>
                     <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:2px;">Pay with Crypto</div>
                     <div id="usdt-price-label" style="color:#00e676;font-size:13px;font-weight:700;margin-top:4px;"></div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:rgba(255,255,255,0.3);"></i>
+            </button>
+
+            <!-- RupantorPay BDT Option -->
+            <button id="pm-btn-rupantorpay" onclick="selectPaymentMethod('bdt')" style="display:none;width:100%;padding:16px 18px;background:rgba(233,30,99,0.08);border:1.5px solid rgba(233,30,99,0.25);border-radius:14px;color:white;cursor:pointer;align-items:center;gap:14px;margin-bottom:20px;transition:all 0.3s;">
+                <div style="width:48px;height:48px;border-radius:12px;background:rgba(233,30,99,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-money-bill-wave" style="font-size:20px;color:#e91e63;"></i>
+                </div>
+                <div style="text-align:left;flex:1;">
+                    <div style="font-weight:700;font-size:15px;">বাংলাদেশ (BDT)</div>
+                    <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:2px;">bKash, Nagad, Rocket — RupantorPay</div>
+                    <div id="bdt-price-label" style="color:#e91e63;font-size:13px;font-weight:700;margin-top:4px;"></div>
                 </div>
                 <i class="fas fa-chevron-right" style="color:rgba(255,255,255,0.3);"></i>
             </button>
@@ -843,6 +856,10 @@
         const AUTH_API_BASE = 'https://finorixpro.pythonanywhere.com'; // Production
         // const AUTH_API_BASE = 'http://127.0.0.1:5000'; // Local
         const BINANCEPAY_PROXY = '/api/binancepay'; // Vercel serverless proxy for Binance Pay
+        const RUPANTORPAY_PROXY = '/api/rupantorpay'; // Vercel serverless proxy for RupantorPay
+
+        // Payment methods enabled status (fetched from server)
+        let enabledMethods = { binance: true, crypto: true, rupantorpay: true };
 
         function showPopup(title, message, icon = '<i class="fas fa-exclamation-triangle"></i>') {
             document.getElementById('popup-icon').innerHTML = icon;
@@ -1108,13 +1125,51 @@
 
         // ===== PAYMENT METHOD SELECTOR =====
         let cachedPriceUSD = 0;
+        let cachedBDTPrice = 0;
+
+        async function loadPaymentMethodsStatus() {
+            try {
+                const res = await fetch(`${AUTH_API_BASE}/api/auth/payment-methods-status`);
+                const data = await res.json();
+                if (data.success) {
+                    enabledMethods.binance = data.binance;
+                    enabledMethods.crypto = data.crypto;
+                    enabledMethods.rupantorpay = data.rupantorpay;
+                }
+            } catch (e) { console.error('Failed to load payment methods status:', e); }
+
+            // Also fetch BDT rate
+            try {
+                const res = await fetch(`${AUTH_API_BASE}/api/auth/bdt-rate`);
+                const data = await res.json();
+                if (data.success) {
+                    cachedBDTPrice = data.bdt_price;
+                }
+            } catch (e) {}
+        }
+        loadPaymentMethodsStatus();
 
         function showPaymentMethodSelector() {
             const overlay = document.getElementById('payment-method-overlay');
             overlay.style.display = 'flex';
+
+            // Show/hide based on enabled status
+            const binBtn = document.getElementById('pm-btn-binance');
+            const cryptoBtn = document.getElementById('pm-btn-crypto');
+            const bdtBtn = document.getElementById('pm-btn-rupantorpay');
+
+            binBtn.style.display = enabledMethods.binance ? 'flex' : 'none';
+            cryptoBtn.style.display = enabledMethods.crypto ? 'flex' : 'none';
+            bdtBtn.style.display = enabledMethods.rupantorpay ? 'flex' : 'none';
+
             if (cachedPriceUSD > 0) {
                 document.getElementById('usdt-price-label').textContent = '$' + cachedPriceUSD.toFixed(2) + ' USD';
                 document.getElementById('binance-price-label').textContent = '$' + cachedPriceUSD.toFixed(2) + ' USDT';
+            }
+            if (cachedBDTPrice > 0) {
+                document.getElementById('bdt-price-label').textContent = '৳' + cachedBDTPrice.toFixed(0) + ' BDT';
+            } else if (cachedPriceUSD > 0) {
+                document.getElementById('bdt-price-label').textContent = '৳' + (cachedPriceUSD * 120).toFixed(0) + ' BDT';
             }
         }
 
@@ -1128,6 +1183,8 @@
                 createPayment();
             } else if (method === 'binance') {
                 createBinancePayment();
+            } else if (method === 'bdt') {
+                createBDTPayment();
             }
         }
 
@@ -1406,6 +1463,206 @@
             }, 5000); // Poll every 5 seconds
         }
 
+        // ===== RUPANTORPAY BDT PAYMENT =====
+        let bdtOrderInfo = null;
+        let bdtPollInterval = null;
+
+        async function createBDTPayment() {
+            const btn = document.getElementById('pay-now-btn');
+            const btnText = document.getElementById('pay-btn-text');
+            const spinner = document.getElementById('pay-spinner');
+            const errorEl = document.getElementById('pay-error');
+            const email = localStorage.getItem('finorix_auth_email');
+
+            if (!email) {
+                showPopup('Session Expired', 'Please login again.');
+                setTimeout(() => logout(), 2000);
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            btn.disabled = true;
+            btnText.textContent = 'Creating BDT payment...';
+            spinner.style.display = 'inline-block';
+
+            try {
+                // Step 1: Create order record on server
+                const orderRes = await fetch(`${AUTH_API_BASE}/api/auth/create-bdt-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const orderData = await orderRes.json();
+
+                if (!orderData.success) {
+                    errorEl.textContent = orderData.message || 'Failed to create order.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                // Step 2: Create RupantorPay checkout via Vercel proxy
+                const rpRes = await fetch(RUPANTORPAY_PROXY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'checkout',
+                        api_key: orderData.api_key,
+                        amount: orderData.amount_bdt,
+                        order_id: orderData.order_id,
+                        customer_email: email,
+                        success_url: window.location.origin + '/subscription?payment=bdt-checking&order_id=' + orderData.order_id,
+                        cancel_url: window.location.origin + '/subscription?payment=cancelled',
+                        callback_url: ''
+                    })
+                });
+                const rpData = await rpRes.json();
+
+                if (!rpData.status || rpData.status === 'error' || !rpData.payment_url) {
+                    console.error('[RupantorPay] Checkout failed:', rpData);
+                    errorEl.textContent = rpData.message || 'Failed to create BDT payment. Please try again.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                // Step 3: Store payment link on server
+                await fetch(`${AUTH_API_BASE}/api/auth/store-bdt-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        order_id: orderData.order_id,
+                        pay_link: rpData.payment_url,
+                        track_id: rpData.order_id || ''
+                    })
+                });
+
+                bdtOrderInfo = {
+                    order_id: orderData.order_id,
+                    rp_order_id: rpData.order_id || '',
+                    amount_bdt: orderData.amount_bdt,
+                    amount_usd: orderData.amount_usd,
+                    api_key: orderData.api_key,
+                    payment_url: rpData.payment_url
+                };
+
+                localStorage.setItem('finorix_pending_bdt', orderData.order_id);
+
+                // Redirect to RupantorPay checkout
+                window.location.href = rpData.payment_url;
+
+            } catch (err) {
+                console.error('[RupantorPay] Error:', err);
+                errorEl.textContent = 'Connection error. Please check your internet and try again.';
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'PAY — ACTIVATE NOW';
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Check BDT payment after returning from RupantorPay
+        async function checkBDTPaymentReturn(orderId) {
+            if (!orderId) orderId = localStorage.getItem('finorix_pending_bdt');
+            if (!orderId) return;
+
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!email) return;
+
+            showPopup('Checking Payment...', 'Verifying your BDT payment...', '<i class="fas fa-spinner fa-spin" style="color:#e91e63;font-size:50px;"></i>');
+
+            try {
+                // Get RupantorPay API key
+                const infoRes = await fetch(`${AUTH_API_BASE}/api/auth/rupantorpay-info`);
+                const infoData = await infoRes.json();
+                const apiKey = infoData.api_key || '';
+
+                if (!apiKey) {
+                    showPopup('Error', 'Could not verify payment. Please contact support.');
+                    return;
+                }
+
+                // Verify with RupantorPay via proxy
+                const verifyRes = await fetch(RUPANTORPAY_PROXY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'verify',
+                        api_key: apiKey,
+                        order_id: orderId
+                    })
+                });
+                const verifyData = await verifyRes.json();
+
+                if (verifyData.status === 'success' || verifyData.payment_status === 'completed' || verifyData.payment_status === 'paid') {
+                    // Activate on server
+                    await fetch(`${AUTH_API_BASE}/api/auth/activate-bdt-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            order_id: orderId,
+                            email: email,
+                            transaction_id: verifyData.transaction_id || verifyData.order_id || ''
+                        })
+                    });
+
+                    localStorage.removeItem('finorix_pending_bdt');
+                    localStorage.setItem('finorix_auth_status', 'active');
+                    showPopup('Payment Successful!', 'Your BDT payment is confirmed! Subscription activated.', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                    setTimeout(() => checkStatus(), 2000);
+                } else {
+                    // Start polling — get API key from rupantorpay-info 
+                    startBDTPoll(orderId, apiKey, email);
+                    showPopup('Payment Processing', 'Your payment is being verified. Please wait...', '<i class="fas fa-spinner fa-spin" style="color:#e91e63;font-size:50px;"></i>');
+                }
+            } catch (e) {
+                console.error('[BDT] Verify error:', e);
+            }
+        }
+
+        function startBDTPoll(orderId, apiKey, email) {
+            if (bdtPollInterval) clearInterval(bdtPollInterval);
+            let attempts = 0;
+            bdtPollInterval = setInterval(async () => {
+                attempts++;
+                if (attempts > 60) { // Stop after 5 minutes (every 5s)
+                    clearInterval(bdtPollInterval);
+                    return;
+                }
+                try {
+                    const verifyRes = await fetch(RUPANTORPAY_PROXY, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'verify', api_key: apiKey, order_id: orderId })
+                    });
+                    const verifyData = await verifyRes.json();
+
+                    if (verifyData.status === 'success' || verifyData.payment_status === 'completed' || verifyData.payment_status === 'paid') {
+                        clearInterval(bdtPollInterval);
+                        bdtPollInterval = null;
+
+                        await fetch(`${AUTH_API_BASE}/api/auth/activate-bdt-payment`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order_id: orderId, email: email, transaction_id: verifyData.transaction_id || '' })
+                        });
+
+                        localStorage.removeItem('finorix_pending_bdt');
+                        localStorage.setItem('finorix_auth_status', 'active');
+                        showPopup('Payment Successful!', 'Your BDT payment is confirmed! Subscription activated.', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                        setTimeout(() => checkStatus(), 2000);
+                    }
+                } catch (e) {
+                    console.error('[BDT] Poll error:', e);
+                }
+            }, 5000);
+        }
+
         // Create Payment (OxaPay Crypto)
         async function createPayment() {
             const btn = document.getElementById('pay-now-btn');
@@ -1608,9 +1865,14 @@
                             } catch(e) { console.error(e); }
                         })();
                     }
+                } else if (paymentResult === 'bdt-checking') {
+                    // Returned from RupantorPay — verify BDT payment
+                    const bdtOrderId = params.get('order_id') || localStorage.getItem('finorix_pending_bdt');
+                    checkBDTPaymentReturn(bdtOrderId);
                 } else if (paymentResult === 'success') {
                     localStorage.removeItem('finorix_pending_payment');
                     localStorage.removeItem('finorix_pending_binance');
+                    localStorage.removeItem('finorix_pending_bdt');
                     localStorage.setItem('finorix_auth_status', 'active');
                     showPopup('Payment Successful!', 'Your subscription has been activated. Enjoy Finorix Pro!', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
                     setTimeout(() => checkStatus(), 500);
@@ -1620,6 +1882,7 @@
                 } else if (paymentResult === 'cancelled') {
                     showPopup('Payment Cancelled', 'Your payment was cancelled. You can try again anytime.', '<i class="fas fa-times-circle" style="color:#ff5555;font-size:50px;"></i>');
                     localStorage.removeItem('finorix_pending_binance');
+                    localStorage.removeItem('finorix_pending_bdt');
                 } else {
                     showPopup('Payment Issue', 'There was an issue verifying your payment. Please contact support or try again.');
                 }
