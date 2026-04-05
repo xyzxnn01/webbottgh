@@ -1,22 +1,12 @@
 // Vercel Serverless Function — Binance Pay Proxy
-// Signs and proxies requests to Binance Pay API (avoids CORS + PythonAnywhere outbound block)
+// Uses Regular Binance API to check Pay transaction history (HMAC-SHA256)
 
 const crypto = require('crypto');
 
-const BINANCE_PAY_BASE = 'https://bpay.binanceapi.com';
+const BINANCE_API_BASE = 'https://api.binance.com';
 
-function generateSignature(apiSecret, timestamp, nonce, body) {
-    const payload = `${timestamp}\n${nonce}\n${body}\n`;
-    return crypto.createHmac('sha512', apiSecret).update(payload).digest('hex').toUpperCase();
-}
-
-function generateNonce(len = 32) {
-    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    let result = '';
-    for (let i = 0; i < len; i++) {
-        result += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return result;
+function sign(queryString, apiSecret) {
+    return crypto.createHmac('sha256', apiSecret).update(queryString).digest('hex');
 }
 
 module.exports = async (req, res) => {
@@ -40,68 +30,47 @@ module.exports = async (req, res) => {
     }
 
     try {
-        let targetPath;
-        let bodyData;
+        if (action === 'check-transactions') {
+            // Check Binance Pay transaction history using regular API
+            // GET /sapi/v1/pay/transactions
+            const timestamp = Date.now();
+            const startTime = payload.startTimestamp || (timestamp - 7200000); // last 2 hours default
 
-        if (action === 'create-order') {
-            targetPath = '/binancepay/openapi/v3/order';
-            const amount = parseFloat(payload.orderAmount);
-            if (isNaN(amount) || amount <= 0) {
-                return res.status(400).json({ success: false, message: 'Invalid orderAmount: ' + payload.orderAmount });
+            const params = new URLSearchParams();
+            params.append('transactionType', '0'); // 0=all
+            params.append('startTimestamp', startTime.toString());
+            params.append('limit', '100');
+            params.append('recvWindow', '10000');
+            params.append('timestamp', timestamp.toString());
+
+            const signature = sign(params.toString(), api_secret);
+            params.append('signature', signature);
+
+            const response = await fetch(`${BINANCE_API_BASE}/sapi/v1/pay/transactions?${params.toString()}`, {
+                method: 'GET',
+                headers: {
+                    'X-MBX-APIKEY': api_key,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            let data;
+            const respText = await response.text();
+            try {
+                data = JSON.parse(respText);
+            } catch (e) {
+                console.error('[BinancePay Proxy] Non-JSON:', respText.substring(0, 500));
+                return res.status(502).json({ success: false, message: 'Binance returned invalid response (HTTP ' + response.status + ')' });
             }
-            bodyData = JSON.stringify({
-                env: { terminalType: 'WEB' },
-                merchantTradeNo: payload.merchantTradeNo,
-                orderAmount: parseFloat(amount.toFixed(2)),
-                currency: payload.currency || 'USDT',
-                description: payload.description || 'Finorix Pro Subscription',
-                goodsDetails: [{
-                    goodsType: '02',
-                    goodsCategory: 'D000',
-                    referenceGoodsId: 'subscription',
-                    goodsName: 'Monthly Subscription',
-                    goodsDetail: 'Finorix Pro Monthly Subscription'
-                }],
-                returnUrl: payload.returnUrl || '',
-                cancelUrl: payload.cancelUrl || ''
-            });
-        } else if (action === 'query-order') {
-            targetPath = '/binancepay/openapi/v2/order/query';
-            bodyData = JSON.stringify({
-                merchantTradeNo: payload.merchantTradeNo
-            });
+
+            return res.status(200).json(data);
+
         } else {
-            return res.status(400).json({ success: false, message: 'Invalid action. Use create-order or query-order' });
+            return res.status(400).json({ success: false, message: 'Invalid action. Use check-transactions' });
         }
-
-        const timestamp = Date.now().toString();
-        const nonce = generateNonce(32);
-        const signature = generateSignature(api_secret, timestamp, nonce, bodyData);
-
-        const response = await fetch(`${BINANCE_PAY_BASE}${targetPath}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'BinancePay-Timestamp': timestamp,
-                'BinancePay-Nonce': nonce,
-                'BinancePay-Certificate-SN': api_key,
-                'BinancePay-Signature': signature,
-            },
-            body: bodyData,
-        });
-
-        let data;
-        const respText = await response.text();
-        try {
-            data = JSON.parse(respText);
-        } catch(e) {
-            console.error('[BinancePay Proxy] Non-JSON response:', respText.substring(0, 500));
-            return res.status(502).json({ success: false, message: 'Binance Pay returned invalid response (HTTP ' + response.status + ')' });
-        }
-        return res.status(200).json(data);
 
     } catch (error) {
         console.error('[BinancePay Proxy] Error:', error.message, error.stack);
-        return res.status(502).json({ success: false, message: 'Binance Pay proxy error: ' + error.message });
+        return res.status(502).json({ success: false, message: 'Binance API error: ' + error.message });
     }
 };
