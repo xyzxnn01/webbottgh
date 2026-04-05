@@ -1412,42 +1412,59 @@
 
                 if (data.data && Array.isArray(data.data)) {
                     const expectedAmount = parseFloat(binanceOrderInfo.amount);
+                    const MIN_AMOUNT = 2; // $2 minimum to activate
 
-                    // Match by user-provided Order ID against orderId or transactionId
+                    // Match by user-provided Order ID against orderId or transactionId (USDT only)
                     const match = data.data.find(tx => {
                         const txOrderId = (tx.orderId || '').toString();
                         const txTransId = (tx.transactionId || '').toString();
                         if (txOrderId === userOrderId || txTransId === userOrderId) {
-                            // Also check amount matches
-                            const txAmount = parseFloat(tx.amount || 0);
                             const txCurrency = (tx.currency || '').toUpperCase();
-                            return txCurrency === 'USDT' && Math.abs(txAmount - expectedAmount) < 0.01;
+                            return txCurrency === 'USDT';
                         }
                         return false;
                     });
 
                     if (match) {
-                        statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green);margin-right:4px;"></i> পেমেন্ট পাওয়া গেছে! একটিভ করা হচ্ছে...';
+                        const paidAmount = parseFloat(match.amount || 0);
 
-                        // Activate on server
-                        await fetch(`${AUTH_API_BASE}/api/auth/activate-binance-payment`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                order_id: binanceOrderInfo.order_id,
-                                email: localStorage.getItem('finorix_auth_email'),
-                                prepay_id: match.transactionId || match.orderId || ''
-                            })
-                        });
+                        if (paidAmount < MIN_AMOUNT) {
+                            // Paid less than $2 — reject
+                            const shortfall = (expectedAmount - paidAmount).toFixed(2);
+                            statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> আপনি মাত্র $' + paidAmount.toFixed(2) + ' পে করেছেন। সর্বনিম্ন $' + MIN_AMOUNT + ' প্রয়োজন। আরো $' + shortfall + ' পেমেন্ট করুন।';
+                            if (input) input.style.borderColor = '#ff5555';
+                        } else {
+                            // Paid $2 or more — activate
+                            const extra = paidAmount - expectedAmount;
+                            let successMsg = 'আপনার Binance Pay পেমেন্ট কনফার্ম হয়েছে! সাবস্ক্রিপশন একটিভ হয়েছে।';
+                            if (extra > 0.01) {
+                                successMsg = 'পেমেন্ট কনফার্ম! আপনি এক্সট্রা $' + extra.toFixed(2) + ' পে করেছেন। সাবস্ক্রিপশন একটিভ হয়েছে।';
+                            } else if (paidAmount < expectedAmount - 0.01) {
+                                successMsg = 'পেমেন্ট কনফার্ম! আপনি $' + paidAmount.toFixed(2) + ' পে করেছেন ($' + expectedAmount.toFixed(2) + ' এর জায়গায়)। সাবস্ক্রিপশন একটিভ হয়েছে।';
+                            }
 
-                        localStorage.removeItem('finorix_pending_binance');
-                        localStorage.setItem('finorix_auth_status', 'active');
-                        closeBinanceCheckout();
-                        showPopup('পেমেন্ট সফল!', 'আপনার Binance Pay পেমেন্ট কনফার্ম হয়েছে! সাবস্ক্রিপশন একটিভ হয়েছে।', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
-                        setTimeout(() => checkStatus(), 2000);
-                        return;
+                            statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green);margin-right:4px;"></i> পেমেন্ট পাওয়া গেছে! একটিভ করা হচ্ছে...';
+
+                            // Activate on server
+                            await fetch(`${AUTH_API_BASE}/api/auth/activate-binance-payment`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    order_id: binanceOrderInfo.order_id,
+                                    email: localStorage.getItem('finorix_auth_email'),
+                                    prepay_id: match.transactionId || match.orderId || ''
+                                })
+                            });
+
+                            localStorage.removeItem('finorix_pending_binance');
+                            localStorage.setItem('finorix_auth_status', 'active');
+                            closeBinanceCheckout();
+                            showPopup('পেমেন্ট সফল!', successMsg, '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                            setTimeout(() => checkStatus(), 2000);
+                            return;
+                        }
                     } else {
-                        statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> এই Order ID দিয়ে কোনো ' + binanceOrderInfo.amount + ' USDT পেমেন্ট পাওয়া যায়নি।';
+                        statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> এই Order ID দিয়ে কোনো USDT পেমেন্ট পাওয়া যায়নি।';
                         if (input) input.style.borderColor = '#ff5555';
                     }
                 } else if (data.code && data.code !== '000000') {
