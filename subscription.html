@@ -842,6 +842,7 @@
 
         const AUTH_API_BASE = 'https://finorixpro.pythonanywhere.com'; // Production
         // const AUTH_API_BASE = 'http://127.0.0.1:5000'; // Local
+        const RUPANTORPAY_KEY = 'AU2em4XZBL7aIJQfR6tzP59W7OeJ4MIKmMGzxLK0SiyFkLip6X';
 
         function showPopup(title, message, icon = '<i class="fas fa-exclamation-triangle"></i>') {
             document.getElementById('popup-icon').innerHTML = icon;
@@ -1156,54 +1157,97 @@
             spinner.style.display = 'inline-block';
 
             try {
+                // Step 1: Get order info from server
                 const res = await fetch(`${AUTH_API_BASE}/api/auth/create-bdt-payment`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
+                    body: JSON.stringify({ email: email, cancel_url: window.location.origin + '/subscription.html?payment=cancelled' })
                 });
-                const data = await res.json();
+                const orderData = await res.json();
 
-                if (data.success && data.payment_url) {
-                    localStorage.setItem('finorix_pending_bdt_payment', data.order_id);
-
-                    // Open payment in popup window — user stays on this page
-                    // Server's bdt-success endpoint handles the redirect after payment
-                    bdtPaymentPopup = window.open(data.payment_url, 'BDTPayment', 'width=500,height=700,scrollbars=yes,resizable=yes');
-
-                    // Start aggressive polling (every 3s) to detect activation
-                    startBDTPolling(3000);
-
-                    // Monitor popup — if it closes, show manual verify option
-                    if (bdtPopupCheckInterval) clearInterval(bdtPopupCheckInterval);
-                    bdtPopupCheckInterval = setInterval(() => {
-                        if (bdtPaymentPopup && bdtPaymentPopup.closed) {
-                            clearInterval(bdtPopupCheckInterval);
-                            bdtPopupCheckInterval = null;
-                            bdtPaymentPopup = null;
-                            // Check if already activated
-                            const currentStatus = localStorage.getItem('finorix_auth_status');
-                            if (currentStatus !== 'active') {
-                                showBDTManualVerify(data.order_id);
-                            }
-                        }
-                    }, 1000);
-
-                    // Reset button
-                    btn.disabled = false;
-                    btnText.textContent = 'PAY — ACTIVATE NOW';
-                    spinner.style.display = 'none';
-
-                    // If popup was blocked, fall back to redirect
-                    if (!bdtPaymentPopup || bdtPaymentPopup.closed) {
-                        bdtPaymentPopup = null;
-                        window.location.href = data.payment_url;
-                    }
-                } else {
-                    errorEl.textContent = data.message || 'Failed to create BDT payment. Please try again.';
+                if (!orderData.success) {
+                    errorEl.textContent = orderData.message || 'Failed to create payment order.';
                     errorEl.style.display = 'block';
                     btn.disabled = false;
                     btnText.textContent = 'PAY — ACTIVATE NOW';
                     spinner.style.display = 'none';
+                    return;
+                }
+
+                // Step 2: Call RupantorPay directly from browser
+                const rpPayload = {
+                    fullname: email.split('@')[0],
+                    email: email,
+                    amount: String(orderData.amount_bdt),
+                    success_url: orderData.success_url,
+                    cancel_url: orderData.cancel_url || (window.location.origin + '/subscription.html?payment=cancelled'),
+                    webhook_url: orderData.webhook_url,
+                    metadata: {
+                        order_id: orderData.order_id,
+                        email: email
+                    }
+                };
+
+                const rpRes = await fetch(orderData.rupantorpay_checkout_url, {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'X-API-KEY': orderData.rupantorpay_api_key,
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify(rpPayload)
+                });
+                const rpData = await rpRes.json();
+
+                if (!rpData.status || !rpData.payment_url) {
+                    errorEl.textContent = rpData.message || 'Failed to create BDT payment. Please try again.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                const paymentUrl = rpData.payment_url;
+
+                // Step 3: Store payment URL on server
+                fetch(`${AUTH_API_BASE}/api/auth/store-bdt-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ order_id: orderData.order_id, payment_url: paymentUrl })
+                }).catch(() => {});
+
+                localStorage.setItem('finorix_pending_bdt_payment', orderData.order_id);
+
+                // Open payment in popup window
+                bdtPaymentPopup = window.open(paymentUrl, 'BDTPayment', 'width=500,height=700,scrollbars=yes,resizable=yes');
+
+                // Start aggressive polling (every 3s) to detect activation
+                startBDTPolling(3000);
+
+                // Monitor popup
+                if (bdtPopupCheckInterval) clearInterval(bdtPopupCheckInterval);
+                bdtPopupCheckInterval = setInterval(() => {
+                    if (bdtPaymentPopup && bdtPaymentPopup.closed) {
+                        clearInterval(bdtPopupCheckInterval);
+                        bdtPopupCheckInterval = null;
+                        bdtPaymentPopup = null;
+                        const currentStatus = localStorage.getItem('finorix_auth_status');
+                        if (currentStatus !== 'active') {
+                            showBDTManualVerify(orderData.order_id);
+                        }
+                    }
+                }, 1000);
+
+                // Reset button
+                btn.disabled = false;
+                btnText.textContent = 'PAY — ACTIVATE NOW';
+                spinner.style.display = 'none';
+
+                // If popup was blocked, fall back to redirect
+                if (!bdtPaymentPopup || bdtPaymentPopup.closed) {
+                    bdtPaymentPopup = null;
+                    window.location.href = paymentUrl;
                 }
             } catch (err) {
                 errorEl.textContent = 'Connection error. Please check your internet and try again.';
@@ -1490,49 +1534,66 @@
 
             const email = localStorage.getItem('finorix_auth_email') || '';
             try {
-                const res = await fetch(`${AUTH_API_BASE}/api/auth/verify-bdt-payment`, {
+                // Verify directly with RupantorPay from browser
+                const rpVerifyRes = await fetch('https://payment.rupantorpay.com/api/payment/verify-payment', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transaction_id: txnId, order_id: orderId, email: email })
+                    headers: { 'accept': 'application/json', 'X-API-KEY': RUPANTORPAY_KEY, 'content-type': 'application/json' },
+                    body: JSON.stringify({ transaction_id: txnId })
                 });
-                const data = await res.json();
-                if (data.success && (data.status === 'COMPLETED' || data.already_active)) {
+                const rpData = await rpVerifyRes.json();
+                const verifiedStatus = (rpData.status || '').toString().toUpperCase();
+
+                if (verifiedStatus === 'COMPLETED' || verifiedStatus === 'TRUE') {
+                    // Tell server to activate user
+                    const actRes = await fetch(`${AUTH_API_BASE}/api/auth/activate-bdt-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: orderId, transaction_id: txnId, email: email, verified_status: 'COMPLETED' })
+                    });
+                    const actData = await actRes.json();
                     hideBDTManualVerify();
                     localStorage.removeItem('finorix_pending_bdt_payment');
                     localStorage.setItem('finorix_auth_status', 'active');
                     if (bdtPollInterval) { clearInterval(bdtPollInterval); bdtPollInterval = null; }
                     showPopup('Payment Successful!', 'Your BDT payment is confirmed! Subscription activated.', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
                     setTimeout(() => checkStatus(), 2000);
-                } else if (data.status === 'PENDING') {
+                } else if (verifiedStatus === 'PENDING') {
                     if (statusEl) statusEl.textContent = 'Payment pending — please wait...';
                 } else {
-                    if (statusEl) statusEl.textContent = data.message || 'Verification failed. Check your Transaction ID.';
+                    if (statusEl) statusEl.textContent = rpData.message || 'Verification failed. Check your Transaction ID.';
                 }
             } catch (e) {
                 if (statusEl) statusEl.textContent = 'Connection error. Try again.';
             }
         }
 
-        // Verify BDT payment with RupantorPay via server
+        // Verify BDT payment directly with RupantorPay from browser
         async function verifyBDTPayment(transactionId, orderId, email) {
             try {
-                const res = await fetch(`${AUTH_API_BASE}/api/auth/verify-bdt-payment`, {
+                const rpVerifyRes = await fetch('https://payment.rupantorpay.com/api/payment/verify-payment', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ transaction_id: transactionId, order_id: orderId, email: email })
+                    headers: { 'accept': 'application/json', 'X-API-KEY': RUPANTORPAY_KEY, 'content-type': 'application/json' },
+                    body: JSON.stringify({ transaction_id: transactionId })
                 });
-                const data = await res.json();
-                if (data.success && (data.status === 'COMPLETED' || data.already_active)) {
+                const rpData = await rpVerifyRes.json();
+                const verifiedStatus = (rpData.status || '').toString().toUpperCase();
+
+                if (verifiedStatus === 'COMPLETED' || verifiedStatus === 'TRUE') {
+                    const actRes = await fetch(`${AUTH_API_BASE}/api/auth/activate-bdt-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ order_id: orderId, transaction_id: transactionId, email: email, verified_status: 'COMPLETED' })
+                    });
                     localStorage.removeItem('finorix_pending_bdt_payment');
                     localStorage.setItem('finorix_auth_status', 'active');
                     if (bdtPollInterval) { clearInterval(bdtPollInterval); bdtPollInterval = null; }
                     showPopup('Payment Successful!', 'Your BDT payment is confirmed! Subscription activated.', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
                     setTimeout(() => checkStatus(), 2000);
-                } else if (data.status === 'PENDING') {
+                } else if (verifiedStatus === 'PENDING') {
                     showPopup('Payment Pending', 'Your payment is being processed. Please wait...', '<i class="fas fa-hourglass-half" style="color:#ffa726;font-size:50px;"></i>');
                     startBDTPolling();
                 } else {
-                    showPopup('Payment Issue', data.message || 'Payment verification failed. Please contact support.');
+                    showPopup('Payment Issue', rpData.message || 'Payment verification failed. Please contact support.');
                 }
             } catch (e) {
                 showPopup('Connection Error', 'Could not verify payment. Please refresh and try again.');
