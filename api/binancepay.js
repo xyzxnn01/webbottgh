@@ -45,10 +45,14 @@ module.exports = async (req, res) => {
 
         if (action === 'create-order') {
             targetPath = '/binancepay/openapi/v3/order';
+            const amount = parseFloat(payload.orderAmount);
+            if (isNaN(amount) || amount <= 0) {
+                return res.status(400).json({ success: false, message: 'Invalid orderAmount: ' + payload.orderAmount });
+            }
             bodyData = JSON.stringify({
                 env: { terminalType: 'WEB' },
                 merchantTradeNo: payload.merchantTradeNo,
-                orderAmount: parseFloat(payload.orderAmount),
+                orderAmount: parseFloat(amount.toFixed(2)),
                 currency: payload.currency || 'USDT',
                 description: payload.description || 'Finorix Pro Subscription',
                 goodsDetails: [{
@@ -86,11 +90,18 @@ module.exports = async (req, res) => {
             body: bodyData,
         });
 
-        const data = await response.json();
+        let data;
+        const respText = await response.text();
+        try {
+            data = JSON.parse(respText);
+        } catch(e) {
+            console.error('[BinancePay Proxy] Non-JSON response:', respText.substring(0, 500));
+            return res.status(502).json({ success: false, message: 'Binance Pay returned invalid response (HTTP ' + response.status + ')' });
+        }
         return res.status(200).json(data);
 
     } catch (error) {
-        console.error('[BinancePay Proxy] Error:', error.message);
-        return res.status(502).json({ success: false, message: 'Binance Pay temporarily unavailable' });
+        console.error('[BinancePay Proxy] Error:', error.message, error.stack);
+        return res.status(502).json({ success: false, message: 'Binance Pay proxy error: ' + error.message });
     }
 };
