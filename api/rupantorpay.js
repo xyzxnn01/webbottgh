@@ -24,26 +24,28 @@ module.exports = async (req, res) => {
     try {
         if (action === 'checkout') {
             // Create RupantorPay checkout
-            const { api_key, amount, callback_url, success_url, cancel_url, customer_name, customer_email, order_id } = payload;
+            const { api_key, amount, webhook_url, success_url, cancel_url, fullname, email, metadata } = payload;
 
             if (!api_key || !amount) {
                 return res.status(400).json({ success: false, message: 'Missing api_key or amount' });
             }
 
             const body = {
-                api_key,
-                amount: parseFloat(amount),
-                callback_url: callback_url || '',
+                amount: String(parseFloat(amount)),
                 success_url: success_url || '',
                 cancel_url: cancel_url || '',
-                customer_name: customer_name || '',
-                customer_email: customer_email || '',
-                metadata: JSON.stringify({ order_id: order_id || '' })
+                webhook_url: webhook_url || '',
+                fullname: fullname || '',
+                email: email || '',
+                metadata: metadata || {}
             };
 
             const response = await fetch('https://payment.rupantorpay.com/api/payment/checkout', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': api_key
+                },
                 body: JSON.stringify(body)
             });
 
@@ -52,16 +54,19 @@ module.exports = async (req, res) => {
 
         } else if (action === 'verify') {
             // Verify RupantorPay payment
-            const { api_key, order_id } = payload;
+            const { api_key, transaction_id } = payload;
 
-            if (!api_key || !order_id) {
-                return res.status(400).json({ success: false, message: 'Missing api_key or order_id' });
+            if (!api_key || !transaction_id) {
+                return res.status(400).json({ success: false, message: 'Missing api_key or transaction_id' });
             }
 
             const response = await fetch('https://payment.rupantorpay.com/api/payment/verify-payment', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ api_key, order_id })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-API-KEY': api_key
+                },
+                body: JSON.stringify({ transaction_id })
             });
 
             const data = await response.json();
