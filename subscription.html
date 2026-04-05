@@ -1287,7 +1287,7 @@
 
                 if (bnbData.status !== 'SUCCESS' || !bnbData.data) {
                     console.error('[BinancePay] Create order failed:', bnbData);
-                    const errMsg = bnbData.errorMessage || bnbData.message || bnbData.code || 'Failed to create Binance Pay order. Please try again.';
+                    const errMsg = bnbData.errorMessage || bnbData.msg || bnbData.message || bnbData.code || 'Failed to create Binance Pay order. Please try again.';
                     errorEl.textContent = errMsg;
                     errorEl.style.display = 'block';
                     btn.disabled = false;
