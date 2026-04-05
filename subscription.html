@@ -842,7 +842,7 @@
 
         const AUTH_API_BASE = 'https://finorixpro.pythonanywhere.com'; // Production
         // const AUTH_API_BASE = 'http://127.0.0.1:5000'; // Local
-        const RUPANTORPAY_KEY = 'AU2em4XZBL7aIJQfR6tzP59W7OeJ4MIKmMGzxLK0SiyFkLip6X';
+        const RUPANTORPAY_PROXY = '/api/rupantorpay'; // Vercel serverless proxy (avoids CORS)
 
         function showPopup(title, message, icon = '<i class="fas fa-exclamation-triangle"></i>') {
             document.getElementById('popup-icon').innerHTML = icon;
@@ -1157,11 +1157,11 @@
             spinner.style.display = 'inline-block';
 
             try {
-                // Step 1: Get order info from server
+                // Step 1: Get order info from server (PythonAnywhere — DB only)
                 const res = await fetch(`${AUTH_API_BASE}/api/auth/create-bdt-payment`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email, cancel_url: window.location.origin + '/subscription.html?payment=cancelled' })
+                    body: JSON.stringify({ email: email, cancel_url: window.location.origin + '/subscription?payment=cancelled' })
                 });
                 const orderData = await res.json();
 
@@ -1174,28 +1174,20 @@
                     return;
                 }
 
-                // Step 2: Call RupantorPay directly from browser
-                const rpPayload = {
-                    fullname: email.split('@')[0],
-                    email: email,
-                    amount: String(orderData.amount_bdt),
-                    success_url: orderData.success_url,
-                    cancel_url: orderData.cancel_url || (window.location.origin + '/subscription.html?payment=cancelled'),
-                    webhook_url: orderData.webhook_url,
-                    metadata: {
-                        order_id: orderData.order_id,
-                        email: email
-                    }
-                };
-
-                const rpRes = await fetch(orderData.rupantorpay_checkout_url, {
+                // Step 2: Call RupantorPay via Vercel serverless proxy (avoids CORS)
+                const rpRes = await fetch(RUPANTORPAY_PROXY, {
                     method: 'POST',
-                    headers: {
-                        'accept': 'application/json',
-                        'X-API-KEY': orderData.rupantorpay_api_key,
-                        'content-type': 'application/json'
-                    },
-                    body: JSON.stringify(rpPayload)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'checkout',
+                        fullname: email.split('@')[0],
+                        email: email,
+                        amount: String(orderData.amount_bdt),
+                        success_url: orderData.success_url,
+                        cancel_url: orderData.cancel_url || (window.location.origin + '/subscription?payment=cancelled'),
+                        webhook_url: orderData.webhook_url,
+                        metadata: { order_id: orderData.order_id, email: email }
+                    })
                 });
                 const rpData = await rpRes.json();
 
@@ -1250,6 +1242,7 @@
                     window.location.href = paymentUrl;
                 }
             } catch (err) {
+                console.error('[BDT] Payment error:', err);
                 errorEl.textContent = 'Connection error. Please check your internet and try again.';
                 errorEl.style.display = 'block';
                 btn.disabled = false;
@@ -1534,11 +1527,11 @@
 
             const email = localStorage.getItem('finorix_auth_email') || '';
             try {
-                // Verify directly with RupantorPay from browser
-                const rpVerifyRes = await fetch('https://payment.rupantorpay.com/api/payment/verify-payment', {
+                // Verify via Vercel serverless proxy
+                const rpVerifyRes = await fetch(RUPANTORPAY_PROXY, {
                     method: 'POST',
-                    headers: { 'accept': 'application/json', 'X-API-KEY': RUPANTORPAY_KEY, 'content-type': 'application/json' },
-                    body: JSON.stringify({ transaction_id: txnId })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'verify', transaction_id: txnId })
                 });
                 const rpData = await rpVerifyRes.json();
                 const verifiedStatus = (rpData.status || '').toString().toUpperCase();
@@ -1567,13 +1560,13 @@
             }
         }
 
-        // Verify BDT payment directly with RupantorPay from browser
+        // Verify BDT payment via Vercel serverless proxy
         async function verifyBDTPayment(transactionId, orderId, email) {
             try {
-                const rpVerifyRes = await fetch('https://payment.rupantorpay.com/api/payment/verify-payment', {
+                const rpVerifyRes = await fetch(RUPANTORPAY_PROXY, {
                     method: 'POST',
-                    headers: { 'accept': 'application/json', 'X-API-KEY': RUPANTORPAY_KEY, 'content-type': 'application/json' },
-                    body: JSON.stringify({ transaction_id: transactionId })
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'verify', transaction_id: transactionId })
                 });
                 const rpData = await rpVerifyRes.json();
                 const verifiedStatus = (rpData.status || '').toString().toUpperCase();
