@@ -2289,9 +2289,9 @@
                     let result = 'DRAW';
                     if (closePrice != null && lastEntryPrice != null) {
                         if (lastClosedSignal.direction === 'CALL') {
-                            result = closePrice > lastEntryPrice ? 'WIN' : closePrice < lastEntryPrice ? 'LOSS' : 'DRAW';
+                            result = closePrice >= lastEntryPrice ? 'WIN' : 'LOSS';
                         } else if (lastClosedSignal.direction === 'PUT') {
-                            result = closePrice < lastEntryPrice ? 'WIN' : closePrice > lastEntryPrice ? 'LOSS' : 'DRAW';
+                            result = closePrice <= lastEntryPrice ? 'WIN' : 'LOSS';
                         }
                     }
                     // Show result for 1 second
