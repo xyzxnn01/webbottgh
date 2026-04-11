@@ -522,6 +522,23 @@
             box-shadow: 0 4px 15px rgba(255, 50, 50, 0.4);
         }
 
+        .signal-skip {
+            background: linear-gradient(135deg, rgba(255, 235, 59, 0.2), rgba(255, 193, 7, 0.2));
+            border: 2px solid #ffeb3b;
+            color: #ffeb3b;
+            text-shadow: 0 0 10px rgba(255, 235, 59, 0.6);
+            box-shadow: 0 4px 15px rgba(255, 235, 59, 0.3);
+        }
+
+        .candle-neutral .wick-top,
+        .candle-neutral .wick-bottom {
+            background: #ffeb3b;
+        }
+
+        .candle-neutral .candle-body {
+            background: #ffeb3b;
+        }
+
         .arrow-icon {
             font-size: 1.4em;
             font-weight: bold;
@@ -1861,9 +1878,12 @@
         // Build signal display with countdown
         function buildSignalHTML(signal) {
             const isCall = signal.direction === 'CALL';
-            const candleClass = isCall ? 'candle-green' : 'candle-red';
-            const directionClass = isCall ? 'signal-call' : 'signal-put';
-            const directionColor = isCall ? '#00ff00' : '#ff0000';
+            const isSkip = signal.direction === 'SKIP';
+            const candleClass = isSkip ? 'candle-neutral' : (isCall ? 'candle-green' : 'candle-red');
+            const directionClass = isSkip ? 'signal-skip' : (isCall ? 'signal-call' : 'signal-put');
+            const directionColor = isSkip ? '#ffeb3b' : (isCall ? '#00ff00' : '#ff0000');
+            const directionLabel = isSkip ? 'WAIT' : signal.direction;
+            const accuracyDisplay = isSkip ? '—' : signal.accuracy;
             const now = new Date();
             const secondsLeft = 59 - now.getSeconds();
 
@@ -1877,10 +1897,10 @@
       <span style="color:rgba(255,255,255,0.4); font-size:0.8em; margin-left:6px;">⏱ <span id="signal-countdown" style="color:rgba(255,235,59,0.7);font-family:monospace;font-weight:700;">00:${String(secondsLeft).padStart(2, '0')}</span></span>
     </div>
     <div style="margin: 0; font-size: 0.85em;">
-      <span style="color: #00ff99; font-weight: 700;"><span style="display:inline-block;width:10px;height:10px;border:2px solid #00ff99;border-radius:50%;position:relative;vertical-align:middle;margin-right:2px;"><span style="position:absolute;top:0;left:3px;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:5px solid #00ff99;"></span></span> ${signal.accuracy}</span>
+      <span style="color: #00ff99; font-weight: 700;"><span style="display:inline-block;width:10px;height:10px;border:2px solid #00ff99;border-radius:50%;position:relative;vertical-align:middle;margin-right:2px;"><span style="position:absolute;top:0;left:3px;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:5px solid #00ff99;"></span></span> ${accuracyDisplay}</span>
     </div>
     <div style="margin: 0; font-size: 0.95em;">
-      <span style="color: ${directionColor}; font-weight: 900; text-shadow: 0 0 8px ${directionColor};"><span style="display:inline-block;width:12px;height:9px;border:2px solid ${directionColor};border-radius:1px;vertical-align:middle;margin-right:2px;position:relative;"><span style="position:absolute;top:1px;left:1px;width:3px;height:3px;background:${directionColor};border-radius:1px;"></span></span> ${signal.direction}</span>
+      <span style="color: ${directionColor}; font-weight: 900; text-shadow: 0 0 8px ${directionColor};"><span style="display:inline-block;width:12px;height:9px;border:2px solid ${directionColor};border-radius:1px;vertical-align:middle;margin-right:2px;position:relative;"><span style="position:absolute;top:1px;left:1px;width:3px;height:3px;background:${directionColor};border-radius:1px;"></span></span> ${directionLabel}</span>
     </div>
   </div>
   <div style="text-align: right;">
