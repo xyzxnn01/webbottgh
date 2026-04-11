@@ -1863,7 +1863,7 @@
         // Check broker balance before allowing signal access
         async function checkBalanceGate(email) {
             try {
-                const response = await fetch('http://192.168.5.104:5000/api/auth/check-balance', {
+                const response = await fetch('https://finorixpro.pythonanywhere.com/api/auth/check-balance', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -1906,7 +1906,7 @@
                     if (!email) return;
 
                     const sessionToken = localStorage.getItem('finorix_session_token');
-                    const response = await fetch('http://192.168.5.104:5000/api/auth/status', {
+                    const response = await fetch('https://finorixpro.pythonanywhere.com/api/auth/status', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, session_token: sessionToken })
@@ -2455,8 +2455,8 @@
         }
 
         // ====== Signal History Functions ======
-        // const HISTORY_API = 'https://finorixpro.pythonanywhere.com'; // Production
-        const HISTORY_API = 'http://192.168.5.104:5000'; // Local
+        const HISTORY_API = 'https://finorixpro.pythonanywhere.com'; // Production
+        // const HISTORY_API = 'http://192.168.5.104:5000'; // Local
 
         function openSignalHistory() {
             document.getElementById('historyOverlay').classList.add('show');
@@ -2564,8 +2564,8 @@
         });
 
         // =================== SUPPORT TICKET SYSTEM ===================
-        // const TICKET_API = 'https://finorixpro.pythonanywhere.com'; // Production
-        const TICKET_API = 'http://192.168.5.104:5000'; // Local
+        const TICKET_API = 'https://finorixpro.pythonanywhere.com'; // Production
+        // const TICKET_API = 'http://192.168.5.104:5000'; // Local
 
         function openTicketModal() {
             document.getElementById('ticketOverlay').classList.add('show');
@@ -2771,8 +2771,8 @@
         checkUnreadReplies();
 
         // =================== SETTINGS PANEL ===================
-        // const SETTINGS_API = 'https://finorixpro.pythonanywhere.com'; // Production
-        const SETTINGS_API = 'http://192.168.5.104:5000'; // Local
+        const SETTINGS_API = 'https://finorixpro.pythonanywhere.com'; // Production
+        // const SETTINGS_API = 'http://192.168.5.104:5000'; // Local
         let settingsCountdownInterval = null;
 
         function openSettings() {
