@@ -1593,6 +1593,24 @@
         </div>
     </div>
 
+    <!-- Signal History Overlay -->
+    <div id="historyOverlay" class="history-overlay">
+        <div class="history-modal">
+            <div class="history-header">
+                <span style="font-size:18px;font-weight:800;color:#fff;">📊 Signal History</span>
+                <button onclick="closeSignalHistory()" style="background:none;border:none;color:#fff;font-size:24px;cursor:pointer;">&times;</button>
+            </div>
+            <div class="history-stats">
+                <div class="stat-box stat-total"><span class="stat-num" id="statTotal">0</span><span class="stat-label">Total</span></div>
+                <div class="stat-box stat-win"><span class="stat-num" id="statWins">0</span><span class="stat-label">Wins</span></div>
+                <div class="stat-box stat-loss"><span class="stat-num" id="statLosses">0</span><span class="stat-label">Losses</span></div>
+                <div class="stat-box stat-rate"><span class="stat-num" id="statRate">—</span><span class="stat-label">Win Rate</span></div>
+            </div>
+            <div class="history-market-label" id="historyMarketLabel">—</div>
+            <div class="history-list" id="historyList"></div>
+        </div>
+    </div>
+
     <!-- Balance Check Overlay -->
     <div id="balance-overlay">
         <div class="balance-overlay-card">
@@ -1615,7 +1633,10 @@
 
         <!-- Signal Box -->
         <div id="signalResult" class="signal-box">
-            <h5 style="color: var(--pink); margin-bottom: 1px; font-size: 0.75em; font-weight: 700;"><span style="display:inline-block;width:14px;height:10px;border:2px solid var(--pink);border-radius:2px;vertical-align:middle;margin-right:3px;position:relative;"><span style="position:absolute;top:2px;left:2px;width:4px;height:4px;background:var(--pink);border-radius:1px;"></span><span style="position:absolute;top:1px;right:1px;width:3px;height:5px;border-right:1.5px solid var(--pink);border-top:1.5px solid var(--pink);"></span></span> Finorix Pro Signal</h5>
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+                <h5 style="color: var(--pink); margin-bottom: 1px; font-size: 0.75em; font-weight: 700;"><span style="display:inline-block;width:14px;height:10px;border:2px solid var(--pink);border-radius:2px;vertical-align:middle;margin-right:3px;position:relative;"><span style="position:absolute;top:2px;left:2px;width:4px;height:4px;background:var(--pink);border-radius:1px;"></span><span style="position:absolute;top:1px;right:1px;width:3px;height:5px;border-right:1.5px solid var(--pink);border-top:1.5px solid var(--pink);"></span></span> Finorix Pro Signal</h5>
+                <button onclick="openSignalHistory()" style="background:rgba(255,20,147,0.15);border:1px solid var(--pink);color:var(--pink);padding:4px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;">📊 History</button>
+            </div>
             <pre id="formattedSignal"></pre>
         </div>
 
