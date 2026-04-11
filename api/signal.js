@@ -622,10 +622,14 @@ module.exports = async (req, res) => {
         return res.status(200).end();
     }
 
-    // Short cache — 3s for fresh binary trading signals
-    res.setHeader('Cache-Control', 's-maxage=3, stale-while-revalidate=5');
+    // Cache by UTC minute — all users in the same minute get the exact same signal
+    // Frontend sends &m=YYYY-MM-DDTHH:MM as cache buster per minute
+    const now = new Date();
+    const secsLeft = 60 - now.getUTCSeconds();
+    res.setHeader('Cache-Control', `s-maxage=${secsLeft}, stale-while-revalidate=5`);
 
     const market = (req.query.market || 'EURUSD').toUpperCase();
+    const minuteKey = req.query.m || now.toISOString().slice(0, 16); // UTC minute key
     const config = MARKET_MAP[market];
 
     if (!config) {
@@ -640,6 +644,8 @@ module.exports = async (req, res) => {
             return res.status(502).json({ success: false, message: 'No analysis data available for ' + market });
         }
 
+        const entryPrice = result.analysis ? result.analysis.close : null;
+
         // SKIP signal — tell frontend to wait
         if (result.direction === 'SKIP') {
             return res.json({
@@ -648,6 +654,8 @@ module.exports = async (req, res) => {
                 direction: 'SKIP',
                 strength: '0%',
                 timeframe: '1 Minute',
+                minute_key: minuteKey,
+                entry_price: entryPrice,
                 reason: result.reason,
                 analysis: result.analysis
             });
@@ -659,6 +667,8 @@ module.exports = async (req, res) => {
             direction: result.direction,
             strength: result.strength + '%',
             timeframe: '1 Minute',
+            minute_key: minuteKey,
+            entry_price: entryPrice,
             analysis: result.analysis
         });
 
