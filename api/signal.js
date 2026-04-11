@@ -646,7 +646,7 @@ function analyzeSignal(data) {
     };
 
     // SKIP if score too weak
-    if (absScore < 15) {
+    if (absScore < 10) {
         return {
             direction: 'SKIP',
             strength: 0,
@@ -658,10 +658,10 @@ function analyzeSignal(data) {
     // Direction from score sign
     const direction = score > 0 ? 'CALL' : 'PUT';
 
-    // Map score (15-100) → strength (60-95%)
+    // Map score (10-100) → strength (55-95%)
     const clampedScore = Math.min(absScore, 100);
-    let strength = Math.round(60 + (clampedScore - 15) * (35 / 85));
-    strength = Math.min(95, Math.max(60, strength));
+    let strength = Math.round(55 + (clampedScore - 10) * (40 / 90));
+    strength = Math.min(95, Math.max(55, strength));
 
     return { direction, strength, analysis };
 }
