@@ -605,10 +605,88 @@
             .subscription-container h2 { font-size: 18px; }
             .signal-btn { padding: 15px 40px; font-size: 18px; }
         }
+
+        /* Device Kicked Overlay */
+        #device-kicked-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 999999;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(15px);
+        }
+        #device-kicked-overlay.show {
+            display: flex;
+        }
+        .kicked-card {
+            background: linear-gradient(145deg, #0d0d0d, #1a0a14);
+            border: 2px solid #ff3333;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255, 50, 50, 0.3);
+            animation: kickedSlideIn 0.4s ease-out;
+        }
+        @keyframes kickedSlideIn {
+            from { transform: scale(0.8) translateY(30px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .kicked-card .kicked-icon {
+            width: 70px; height: 70px;
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+            box-shadow: 0 0 30px rgba(255, 50, 50, 0.4);
+        }
+        .kicked-card h2 {
+            color: #ff3333;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .kicked-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .kicked-card .kicked-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+            color: #fff;
+            padding: 13px 36px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(255, 50, 50, 0.35);
+            transition: transform 0.2s;
+        }
+        .kicked-card .kicked-btn:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
     <div class="trading-bg" id="tradingBg"></div>
+
+    <!-- Device Kicked Overlay -->
+    <div id="device-kicked-overlay">
+        <div class="kicked-card">
+            <div class="kicked-icon">📱</div>
+            <h2>Logged In On Another Device</h2>
+            <p>Your account has been logged in from another device. Only one device can be active at a time.</p>
+            <button class="kicked-btn" onclick="window.location.href='login'">GO TO LOGIN</button>
+        </div>
+    </div>
 
     <!-- Loading State -->
     <div class="loading-container" id="loading-state">
@@ -969,8 +1047,7 @@
                     localStorage.removeItem('finorix_auth_status');
                     localStorage.removeItem('finorix_login_time');
                     localStorage.removeItem('finorix_session_token');
-                    alert(result.message || 'Your account has been logged in from another device.');
-                    window.location.href = 'login';
+                    document.getElementById('device-kicked-overlay').classList.add('show');
                     return;
                 }
 
