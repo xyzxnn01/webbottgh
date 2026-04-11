@@ -133,21 +133,19 @@ function ok(v) { return v !== null && v !== undefined && !isNaN(v); }
 function sf(val, dec) { return ok(val) ? parseFloat(Number(val).toFixed(dec)) : null; }
 
 /**
- * SMART SIGNAL ANALYSIS ENGINE v2
+ * SMART SIGNAL ANALYSIS ENGINE v3
  *
- * Dual-mode: TREND-FOLLOWING + MEAN-REVERSION
+ * Architecture: OSCILLATOR-PRIMARY with CAPPED TREND
  * 
- * Mode 1 (Strong Trend): ADX > 25, all TFs align → go WITH trend
- * Mode 2 (Reversal): Oscillators at extremes → go AGAINST trend
- * Mode 3 (SKIP): No clear setup → don't trade
- *
- * For 1-minute binary options:
- *   - Overbought (RSI>70, Stoch>80, BB upper) → PUT
- *   - Oversold  (RSI<30, Stoch<20, BB lower) → CALL
- *   - Strong trend + pullback → WITH trend
- *   - Conflicting signals → SKIP
- *
- * Requires minimum CONFLUENCE of 4+ indicators agreeing
+ * For 1-minute binary options, micro-reversals matter more than macro-trend.
+ * Trend score is CAPPED at ±10 so oscillators always have the power to override.
+ * 
+ * Decision flow:
+ *   1. Calculate oscillator score (uncapped) — RSI, Stoch, MACD, CCI, W%R, BB, etc.
+ *   2. Calculate trend score (CAPPED ±10) — EMA ribbon, MAs, Hull, VWMA
+ *   3. Combine: total = oscScore + cappedTrend + adxScore + srScore + mtfScore
+ *   4. Overbought/Oversold confluence override
+ *   5. If |total| < 15 → SKIP
  */
 function analyzeSignal(data) {
     if (!data || !data.data || !data.data[0] || !data.data[0].d) return null;
@@ -200,7 +198,7 @@ function analyzeSignal(data) {
     };
 
     // ===== VOTE-BASED SCORING =====
-    // Each indicator votes CALL (+) or PUT (-) with a weight
+    // Oscillator = PRIMARY (uncapped), Trend = SECONDARY (CAPPED ±10)
     let score = 0;
     const breakdown = {};
     const add = (name, pts) => {
@@ -209,6 +207,12 @@ function analyzeSignal(data) {
     };
 
     let trendScore = 0, momentumScore = 0, adxScore = 0, srScore = 0, mtfScore = 0;
+    // Track raw trend before capping
+    let rawTrend = 0;
+    const addTrend = (name, pts) => {
+        const p = Math.round(pts);
+        if (p !== 0) { rawTrend += p; breakdown[name] = p; }
+    };
 
     // ===== DETECT MARKET MODE =====
     const isStrongTrend = ok(m1.adx) && m1.adx > 25;
@@ -240,26 +244,26 @@ function analyzeSignal(data) {
     const isOversold = osSignals >= 3;
 
     // ==========================================================
-    // SECTION 1: TREND ANALYSIS (reduced weight for 1-min)
+    // SECTION 1: TREND ANALYSIS (CAPPED at ±10 total)
+    // Uses addTrend() — accumulated into rawTrend, capped later
     // ==========================================================
 
-    // 1.1 EMA Ribbon (reduced from 8 to 4)
+    // 1.1 EMA Ribbon
     if (ok(m1.ema5) && ok(m1.ema10) && ok(m1.ema20) && ok(m1.ema50)) {
         const bullRibbon = m1.ema5 > m1.ema10 && m1.ema10 > m1.ema20 && m1.ema20 > m1.ema50;
         const bearRibbon = m1.ema5 < m1.ema10 && m1.ema10 < m1.ema20 && m1.ema20 < m1.ema50;
-        if (bullRibbon) { add('ema_ribbon', 4); trendScore += 4; }
-        else if (bearRibbon) { add('ema_ribbon', -4); trendScore -= 4; }
+        if (bullRibbon) addTrend('ema_ribbon', 3);
+        else if (bearRibbon) addTrend('ema_ribbon', -3);
         else {
             let align = 0;
             if (m1.ema5 > m1.ema10) align++; else align--;
             if (m1.ema10 > m1.ema20) align++; else align--;
             if (m1.ema20 > m1.ema50) align++; else align--;
-            const pts = align; // reduced
-            add('ema_ribbon', pts); trendScore += pts;
+            addTrend('ema_ribbon', align);
         }
     }
 
-    // 1.2 Price vs Key MAs (reduced from 1.5x to 1x)
+    // 1.2 Price vs Key MAs
     if (ok(m1.close)) {
         let maVotes = 0;
         if (ok(m1.ema20)) maVotes += m1.close > m1.ema20 ? 1 : -1;
@@ -267,68 +271,68 @@ function analyzeSignal(data) {
         if (ok(m1.sma20)) maVotes += m1.close > m1.sma20 ? 1 : -1;
         if (ok(m1.sma50)) maVotes += m1.close > m1.sma50 ? 1 : -1;
         if (ok(m1.ema200)) maVotes += m1.close > m1.ema200 ? 1 : -1;
-        const pts = maVotes; // was maVotes * 1.5
-        add('price_vs_ma', pts); trendScore += pts;
+        addTrend('price_vs_ma', Math.round(maVotes * 0.6));
     }
 
     // 1.3 Hull MA
     if (ok(m1.close) && ok(m1.hull)) {
-        const pts = m1.close > m1.hull ? 2 : -2;
-        add('hull_ma', pts); trendScore += pts;
+        addTrend('hull_ma', m1.close > m1.hull ? 1 : -1);
     }
 
     // 1.4 VWMA
     if (ok(m1.close) && ok(m1.vwma)) {
-        const pts = m1.close > m1.vwma ? 1 : -1;
-        add('vwma', pts); trendScore += pts;
+        addTrend('vwma', m1.close > m1.vwma ? 1 : -1);
     }
 
     // 1.5 Ichimoku
     if (ok(m1.close) && ok(m1.ichiBL)) {
-        const pts = m1.close > m1.ichiBL ? 1 : -1;
-        add('ichimoku', pts); trendScore += pts;
+        addTrend('ichimoku', m1.close > m1.ichiBL ? 1 : -1);
     }
 
-    // 1.6 TradingView MA Rec (reduced from 5x to 3x)
+    // 1.6 TradingView MA Rec
     if (ok(m1.recMA)) {
-        const pts = Math.round(m1.recMA * 3);
-        add('tv_ma_rec', pts); trendScore += pts;
+        addTrend('tv_ma_rec', Math.round(m1.recMA * 2));
     }
 
+    // *** CAP trend score to ±10 ***
+    trendScore = Math.max(-10, Math.min(10, rawTrend));
+    score += trendScore;
+    breakdown['trend_capped'] = trendScore;
+    if (rawTrend !== trendScore) breakdown['trend_raw_before_cap'] = rawTrend;
+
     // ==========================================================
-    // SECTION 2: OSCILLATOR & REVERSAL (INCREASED weight)
+    // SECTION 2: OSCILLATOR & REVERSAL — PRIMARY SIGNAL SOURCE
     // ==========================================================
 
-    // 2.1 RSI — REVERSAL-focused for 1-min binary
+    // 2.1 RSI — REVERSAL-focused (strongest weight for extremes)
     if (ok(m1.rsi)) {
-        // Reversal zones (MAIN signal for 1-min)
-        if (m1.rsi > 75) {
-            const p = -Math.min(8, Math.round((m1.rsi - 70) / 2));
+        if (m1.rsi > 80) {
+            add('rsi_reversal', -10); momentumScore -= 10;  // Extreme OB → strong PUT
+        } else if (m1.rsi > 70) {
+            const p = -Math.round(4 + (m1.rsi - 70));
             add('rsi_reversal', p); momentumScore += p;
-        } else if (m1.rsi < 25) {
-            const p = Math.min(8, Math.round((30 - m1.rsi) / 2));
+        } else if (m1.rsi < 20) {
+            add('rsi_reversal', 10); momentumScore += 10;   // Extreme OS → strong CALL
+        } else if (m1.rsi < 30) {
+            const p = Math.round(4 + (30 - m1.rsi));
             add('rsi_reversal', p); momentumScore += p;
-        }
-        // Moderate zones — momentum direction
-        else if (m1.rsi > 55) {
-            add('rsi_momentum', 2); momentumScore += 2;
+        } else if (m1.rsi > 55) {
+            add('rsi_momentum', 1); momentumScore += 1;
         } else if (m1.rsi < 45) {
-            add('rsi_momentum', -2); momentumScore -= 2;
+            add('rsi_momentum', -1); momentumScore -= 1;
         }
 
         // RSI divergence detection
         if (ok(m1.rsiPrev)) {
             if (m1.rsi < m1.rsiPrev && ok(m1.close) && ok(m1.open) && m1.close > m1.open) {
-                // Price going up but RSI going down → bearish divergence
-                add('rsi_divergence', -3); momentumScore -= 3;
+                add('rsi_divergence', -4); momentumScore -= 4; // bearish divergence
             } else if (m1.rsi > m1.rsiPrev && ok(m1.close) && ok(m1.open) && m1.close < m1.open) {
-                // Price going down but RSI going up → bullish divergence
-                add('rsi_divergence', 3); momentumScore += 3;
+                add('rsi_divergence', 4); momentumScore += 4;  // bullish divergence
             }
         }
     }
 
-    // 2.2 Stochastic — Crossover in extreme zones (strongest 1-min signal)
+    // 2.2 Stochastic — Crossover in extreme zones
     if (ok(m1.stochK) && ok(m1.stochD)) {
         if (ok(m1.stochKPrev) && ok(m1.stochDPrev)) {
             const wasBelow = m1.stochKPrev <= m1.stochDPrev;
@@ -337,19 +341,21 @@ function analyzeSignal(data) {
             const crossDown = m1.stochKPrev >= m1.stochDPrev && m1.stochK < m1.stochD;
 
             if (crossUp && m1.stochK < 25) {
-                add('stoch_cross', 10); momentumScore += 10; // Strong oversold crossover → CALL
+                add('stoch_cross', 12); momentumScore += 12;
             } else if (crossUp) {
                 add('stoch_cross', 3); momentumScore += 3;
             } else if (crossDown && m1.stochK > 75) {
-                add('stoch_cross', -10); momentumScore -= 10; // Strong overbought crossover → PUT
+                add('stoch_cross', -12); momentumScore -= 12;
             } else if (crossDown) {
                 add('stoch_cross', -3); momentumScore -= 3;
             }
         }
 
         // Extreme zone reversal
-        if (m1.stochK > 85) { add('stoch_extreme', -4); momentumScore -= 4; }
-        else if (m1.stochK < 15) { add('stoch_extreme', 4); momentumScore += 4; }
+        if (m1.stochK > 90) { add('stoch_extreme', -6); momentumScore -= 6; }
+        else if (m1.stochK > 80) { add('stoch_extreme', -3); momentumScore -= 3; }
+        else if (m1.stochK < 10) { add('stoch_extreme', 6); momentumScore += 6; }
+        else if (m1.stochK < 20) { add('stoch_extreme', 3); momentumScore += 3; }
 
         // Position
         const sPos = m1.stochK > m1.stochD ? 1 : -1;
@@ -369,22 +375,24 @@ function analyzeSignal(data) {
         }
     }
 
-    // 2.4 CCI — Extreme reversal
+    // 2.4 CCI — Extreme reversal (boosted)
     if (ok(m1.cci)) {
-        if (m1.cci > 200) { add('cci', -4); momentumScore -= 4; }      // Extreme OB → PUT
-        else if (m1.cci > 100) { add('cci', -2); momentumScore -= 2; } // OB → PUT
-        else if (m1.cci < -200) { add('cci', 4); momentumScore += 4; } // Extreme OS → CALL
-        else if (m1.cci < -100) { add('cci', 2); momentumScore += 2; } // OS → CALL
+        if (m1.cci > 200) { add('cci', -6); momentumScore -= 6; }
+        else if (m1.cci > 100) { add('cci', -3); momentumScore -= 3; }
+        else if (m1.cci < -200) { add('cci', 6); momentumScore += 6; }
+        else if (m1.cci < -100) { add('cci', 3); momentumScore += 3; }
         else if (m1.cci > 0) { add('cci', 1); momentumScore += 1; }
         else { add('cci', -1); momentumScore -= 1; }
     }
 
-    // 2.5 Williams %R — Mean reversion
+    // 2.5 Williams %R — Mean reversion (boosted)
     if (ok(m1.wr)) {
-        if (m1.wr > -10) { add('williams_r', -5); momentumScore -= 5; }       // Extreme OB
-        else if (m1.wr > -20) { add('williams_r', -3); momentumScore -= 3; }  // OB
-        else if (m1.wr < -90) { add('williams_r', 5); momentumScore += 5; }   // Extreme OS
-        else if (m1.wr < -80) { add('williams_r', 3); momentumScore += 3; }   // OS
+        if (m1.wr > -5) { add('williams_r', -7); momentumScore -= 7; }
+        else if (m1.wr > -15) { add('williams_r', -4); momentumScore -= 4; }
+        else if (m1.wr > -20) { add('williams_r', -2); momentumScore -= 2; }
+        else if (m1.wr < -95) { add('williams_r', 7); momentumScore += 7; }
+        else if (m1.wr < -85) { add('williams_r', 4); momentumScore += 4; }
+        else if (m1.wr < -80) { add('williams_r', 2); momentumScore += 2; }
         else if (m1.wr > -50) { add('williams_r', 1); momentumScore += 1; }
         else { add('williams_r', -1); momentumScore -= 1; }
     }
@@ -450,15 +458,17 @@ function analyzeSignal(data) {
     // SECTION 4: SUPPORT / RESISTANCE & BB
     // ==========================================================
 
-    // 4.1 Bollinger Band — REVERSAL indicator (INCREASED weight)
+    // 4.1 Bollinger Band — REVERSAL indicator (strongest for extremes)
     if (ok(m1.close) && ok(m1.bbUp) && ok(m1.bbLow)) {
         const bbRange = m1.bbUp - m1.bbLow;
         if (bbRange > 0) {
             const bbPos = (m1.close - m1.bbLow) / bbRange;
-            if (bbPos >= 0.98) { add('bb_extreme_upper', -7); srScore -= 7; }      // At upper band → strong PUT
-            else if (bbPos >= 0.90) { add('bb_near_upper', -4); srScore -= 4; }
-            else if (bbPos <= 0.02) { add('bb_extreme_lower', 7); srScore += 7; }  // At lower band → strong CALL
-            else if (bbPos <= 0.10) { add('bb_near_lower', 4); srScore += 4; }
+            if (bbPos >= 0.98) { add('bb_extreme', -10); srScore -= 10; }
+            else if (bbPos >= 0.92) { add('bb_near_upper', -6); srScore -= 6; }
+            else if (bbPos >= 0.85) { add('bb_upper', -3); srScore -= 3; }
+            else if (bbPos <= 0.02) { add('bb_extreme', 10); srScore += 10; }
+            else if (bbPos <= 0.08) { add('bb_near_lower', 6); srScore += 6; }
+            else if (bbPos <= 0.15) { add('bb_lower', 3); srScore += 3; }
             else if (bbPos > 0.65) { add('bb_upper_zone', -1); srScore -= 1; }
             else if (bbPos < 0.35) { add('bb_lower_zone', 1); srScore += 1; }
         }
@@ -542,8 +552,7 @@ function analyzeSignal(data) {
 
     // 6.1 OVERBOUGHT CONFLUENCE → Strong PUT override
     if (isOverbought) {
-        // Multiple oscillators agree: market is overbought → expect downward reversal
-        const boost = -8;
+        const boost = -12;
         score += boost;
         breakdown['ob_confluence'] = boost;
         filters.overbought = 'Multiple indicators overbought — reversal expected';
@@ -551,20 +560,15 @@ function analyzeSignal(data) {
 
     // 6.2 OVERSOLD CONFLUENCE → Strong CALL override
     if (isOversold) {
-        const boost = 8;
+        const boost = 12;
         score += boost;
         breakdown['os_confluence'] = boost;
         filters.oversold = 'Multiple indicators oversold — reversal expected';
     }
 
-    // 6.3 Low ADX = ranging market → boost reversal signals, reduce trend signals
+    // 6.3 Low ADX = ranging market → oscillator signals more reliable, trend already capped
     if (isWeakTrend) {
-        // In ranging market, oscillator/reversal signals are more reliable
-        // Reduce trend component
-        const trendReduction = Math.round(trendScore * 0.5);
-        score -= trendReduction;
-        if (trendReduction !== 0) breakdown['weak_trend_adj'] = -trendReduction;
-        filters.ranging = 'Weak trend (ADX<20) — trend signals reduced';
+        filters.ranging = 'Weak trend (ADX<20) — oscillator signals prioritized';
     }
 
     // 6.4 Multi-TF conflict → reduce confidence
@@ -577,14 +581,13 @@ function analyzeSignal(data) {
         }
     }
 
-    // 6.5 Trend vs Score direction conflict in strong trend
-    if (isStrongTrend && ok(m1.pdi) && ok(m1.mdi)) {
-        const trendDir = m1.pdi > m1.mdi ? 1 : -1; // +1 = bullish trend, -1 = bearish trend
+    // 6.5 Trend vs Score direction — in very strong trend, only go against if we have OB/OS confirmation
+    if (isVeryStrongTrend && ok(m1.pdi) && ok(m1.mdi)) {
+        const trendDir = m1.pdi > m1.mdi ? 1 : -1;
         const scoreDir = score > 0 ? 1 : score < 0 ? -1 : 0;
-        // If we're going against a very strong trend, need extra confirmation
-        if (isVeryStrongTrend && scoreDir !== 0 && scoreDir !== trendDir && !isOverbought && !isOversold) {
-            score = Math.round(score * 0.5);
-            filters.against_strong_trend = 'Against very strong trend without reversal confirmation';
+        if (scoreDir !== 0 && scoreDir !== trendDir && !isOverbought && !isOversold) {
+            score = Math.round(score * 0.7);
+            filters.against_strong_trend = 'Against strong trend without OB/OS confirmation — reduced';
         }
     }
 
@@ -606,6 +609,7 @@ function analyzeSignal(data) {
     const analysis = {
         close: sf(m1.close, 5),
         trend_score: trendScore,
+        trend_raw: rawTrend,
         momentum_score: momentumScore,
         adx_score: adxScore,
         sr_score: srScore,
@@ -641,8 +645,8 @@ function analyzeSignal(data) {
         indicator_breakdown: breakdown,
     };
 
-    // SKIP if score too weak (raised threshold for accuracy)
-    if (absScore < 25) {
+    // SKIP if score too weak
+    if (absScore < 15) {
         return {
             direction: 'SKIP',
             strength: 0,
@@ -654,9 +658,9 @@ function analyzeSignal(data) {
     // Direction from score sign
     const direction = score > 0 ? 'CALL' : 'PUT';
 
-    // Map score (25-100) → strength (60-95%)
+    // Map score (15-100) → strength (60-95%)
     const clampedScore = Math.min(absScore, 100);
-    let strength = Math.round(60 + (clampedScore - 25) * (35 / 75));
+    let strength = Math.round(60 + (clampedScore - 15) * (35 / 85));
     strength = Math.min(95, Math.max(60, strength));
 
     return { direction, strength, analysis };
