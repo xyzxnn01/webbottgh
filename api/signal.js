@@ -133,20 +133,21 @@ function ok(v) { return v !== null && v !== undefined && !isNaN(v); }
 function sf(val, dec) { return ok(val) ? parseFloat(Number(val).toFixed(dec)) : null; }
 
 /**
- * SMART SIGNAL ANALYSIS ENGINE v6
+ * SMART SIGNAL ANALYSIS ENGINE v7
  *
- * Architecture: SIMPLE TREND-FOLLOWING
+ * Architecture: SUPPORT/RESISTANCE + MOMENTUM DIRECTION
  * 
- * Philosophy: Follow the candle trend. Use TradingView's own aggregated
- * recommendations as the PRIMARY signal source (26 indicators each).
- * Momentum indicators CONFIRM the trend. NO reversal unless ALL timeframes extreme.
+ * Philosophy: For 1-minute binary options, predict the NEXT candle direction.
+ * S/R levels tell us WHERE price will bounce/reverse.
+ * Momentum DIRECTION (rising/falling) tells us current micro-trend.
+ * TV recommendations are CONTEXT only, not primary.
  * 
  * Score breakdown:
- *   1. TV Recommendations (PRIMARY ~50%): 1m*10, 5m*8, 15m*10 → up to ±28
- *   2. Trend confirmation (~25%): EMA ribbon, price vs MAs, ADX DI → up to ±12
- *   3. Momentum support (~25%): MACD, RSI, Stoch, Mom, AO → up to ±12
- *   4. Reversal guard: only when 4+ OB/OS indicators agree → ±6
- *   5. SKIP threshold: 6 (more signals, faster)
+ *   1. Support/Resistance (~40%): BB position, pivot proximity, mean reversion
+ *   2. Momentum Direction (~30%): RSI/Stoch/CCI/Mom/AO direction of CHANGE
+ *   3. Candlestick Patterns (~15%): Marubozu, pin bars, engulfing
+ *   4. Trend Context (~15%): TV recs (low weight), ADX DI, EMA short-term
+ *   5. SKIP threshold: 5
  */
 function analyzeSignal(data) {
     if (!data || !data.data || !data.data[0] || !data.data[0].d) return null;
@@ -206,114 +207,202 @@ function analyzeSignal(data) {
     };
 
     // ==========================================================
-    // SECTION 1: TRADINGVIEW RECOMMENDATIONS — PRIMARY (50% weight)
-    // recAll ranges from -1 (STRONG SELL) to +1 (STRONG BUY)
-    // Already aggregates 26 indicators internally
-    // ==========================================================
-    if (ok(m1.recAll)) add('tv_1m', Math.round(m1.recAll * 10));
-    if (ok(m1.recMA))  add('tv_1m_ma', Math.round(m1.recMA * 5));
-    if (ok(m1.recOsc)) add('tv_1m_osc', Math.round(m1.recOsc * 3));
-
-    if (ok(m5.recAll)) add('tv_5m', Math.round(m5.recAll * 8));
-    if (ok(m5.recMA))  add('tv_5m_ma', Math.round(m5.recMA * 3));
-
-    if (ok(m15.recAll)) add('tv_15m', Math.round(m15.recAll * 10));
-    if (ok(m15.recMA))  add('tv_15m_ma', Math.round(m15.recMA * 4));
-
-    // ==========================================================
-    // SECTION 2: TREND CONFIRMATION (25% weight)
+    // SECTION 1: SUPPORT/RESISTANCE ANALYSIS — PRIMARY (~40%)
+    // Where is price relative to key S/R levels?
+    // Near resistance → PUT pressure, near support → CALL pressure
     // ==========================================================
 
-    // 2.1 EMA Ribbon — trend direction
-    if (ok(m1.ema5) && ok(m1.ema10) && ok(m1.ema20) && ok(m1.ema50)) {
-        const bullRibbon = m1.ema5 > m1.ema10 && m1.ema10 > m1.ema20 && m1.ema20 > m1.ema50;
-        const bearRibbon = m1.ema5 < m1.ema10 && m1.ema10 < m1.ema20 && m1.ema20 < m1.ema50;
-        if (bullRibbon) add('ema_ribbon', 4);
-        else if (bearRibbon) add('ema_ribbon', -4);
-        else {
-            let align = 0;
-            if (m1.ema5 > m1.ema10) align++; else align--;
-            if (m1.ema10 > m1.ema20) align++; else align--;
-            if (m1.ema20 > m1.ema50) align++; else align--;
-            add('ema_ribbon', align);
+    // 1.1 Bollinger Band Position — strongest dynamic S/R
+    if (ok(m1.close) && ok(m1.bbUp) && ok(m1.bbLow)) {
+        const bbRange = m1.bbUp - m1.bbLow;
+        if (bbRange > 0) {
+            const bbPos = (m1.close - m1.bbLow) / bbRange;
+            if (bbPos >= 0.97) add('bb_resist', -8);
+            else if (bbPos >= 0.90) add('bb_resist', -5);
+            else if (bbPos >= 0.80) add('bb_resist', -3);
+            else if (bbPos <= 0.03) add('bb_support', 8);
+            else if (bbPos <= 0.10) add('bb_support', 5);
+            else if (bbPos <= 0.20) add('bb_support', 3);
+            else if (bbPos > 0.65) add('bb_upper', -1);
+            else if (bbPos < 0.35) add('bb_lower', 1);
         }
     }
 
-    // 2.2 Price vs Key MAs
-    if (ok(m1.close)) {
-        let maVotes = 0;
-        if (ok(m1.ema20)) maVotes += m1.close > m1.ema20 ? 1 : -1;
-        if (ok(m1.ema50)) maVotes += m1.close > m1.ema50 ? 1 : -1;
-        if (ok(m1.sma20)) maVotes += m1.close > m1.sma20 ? 1 : -1;
-        if (ok(m1.sma50)) maVotes += m1.close > m1.sma50 ? 1 : -1;
-        if (ok(m1.ema200)) maVotes += m1.close > m1.ema200 ? 1 : -1;
-        add('price_vs_ma', maVotes);
+    // 1.2 5m Bollinger Band Position — higher TF S/R
+    if (ok(m1.close) && ok(m5.bbUp) && ok(m5.bbLow)) {
+        const bbRange5 = m5.bbUp - m5.bbLow;
+        if (bbRange5 > 0) {
+            const bbPos5 = (m1.close - m5.bbLow) / bbRange5;
+            if (bbPos5 >= 0.95) add('bb5_resist', -4);
+            else if (bbPos5 <= 0.05) add('bb5_support', 4);
+            else if (bbPos5 >= 0.85) add('bb5_resist', -2);
+            else if (bbPos5 <= 0.15) add('bb5_support', 2);
+        }
     }
 
-    // 2.3 ADX DI — trend direction indicator
-    if (ok(m1.pdi) && ok(m1.mdi)) {
-        const p = m1.pdi > m1.mdi ? 3 : -3;
-        add('adx_di', p);
+    // 1.3 Pivot Point Proximity — classic S/R levels
+    if (ok(m1.close) && ok(m1.atr) && m1.atr > 0) {
+        const prox = m1.atr * 0.3;
+        if (ok(m1.pR2) && Math.abs(m1.close - m1.pR2) < prox) add('near_R2', -6);
+        else if (ok(m1.pR1) && Math.abs(m1.close - m1.pR1) < prox) add('near_R1', -4);
+        else if (ok(m1.pS2) && Math.abs(m1.close - m1.pS2) < prox) add('near_S2', 6);
+        else if (ok(m1.pS1) && Math.abs(m1.close - m1.pS1) < prox) add('near_S1', 4);
+
+        if (ok(m1.pM)) add('pivot_pos', m1.close > m1.pM ? 1 : -1);
+    }
+
+    // 1.4 Price distance from EMA20 — mean reversion when overextended
+    if (ok(m1.close) && ok(m1.ema20) && ok(m1.atr) && m1.atr > 0) {
+        const dist = (m1.close - m1.ema20) / m1.atr;
+        if (dist > 2.0) add('overextend_up', -4);
+        else if (dist > 1.5) add('overextend_up', -2);
+        else if (dist < -2.0) add('overextend_down', 4);
+        else if (dist < -1.5) add('overextend_down', 2);
+    }
+
+    // 1.5 Williams %R — S/R zone indicator
+    if (ok(m1.wr)) {
+        if (m1.wr > -5) add('wr_ob', -3);
+        else if (m1.wr > -15) add('wr_ob', -1);
+        else if (m1.wr < -95) add('wr_os', 3);
+        else if (m1.wr < -85) add('wr_os', 1);
     }
 
     // ==========================================================
-    // SECTION 3: MOMENTUM SUPPORT (25% weight)
+    // SECTION 2: MOMENTUM DIRECTION — SECONDARY (~30%)
+    // Not absolute values but DIRECTION OF CHANGE
+    // "Is momentum accelerating or decelerating?"
     // ==========================================================
 
-    // 3.1 MACD
+    // 2.1 RSI Direction — rising = bullish push, falling = bearish push
+    if (ok(m1.rsi) && ok(m1.rsiPrev)) {
+        const rsiChg = m1.rsi - m1.rsiPrev;
+        if (rsiChg > 3) add('rsi_rising', 3);
+        else if (rsiChg > 0.5) add('rsi_rising', 1);
+        else if (rsiChg < -3) add('rsi_falling', -3);
+        else if (rsiChg < -0.5) add('rsi_falling', -1);
+
+        // RSI at extreme AND reversing = strong reversal signal
+        if (m1.rsi > 75 && rsiChg < -1) add('rsi_rev_ob', -3);
+        else if (m1.rsi < 25 && rsiChg > 1) add('rsi_rev_os', 3);
+    }
+
+    // 2.2 Stochastic Crossover + Direction
+    if (ok(m1.stochK) && ok(m1.stochD) && ok(m1.stochKPrev) && ok(m1.stochDPrev)) {
+        const wasBelow = m1.stochKPrev <= m1.stochDPrev;
+        const nowAbove = m1.stochK > m1.stochD;
+        const crossUp = wasBelow && nowAbove;
+        const crossDown = !wasBelow && m1.stochK < m1.stochD;
+
+        if (crossUp) add('stoch_cross', m1.stochK < 30 ? 5 : 2);
+        else if (crossDown) add('stoch_cross', m1.stochK > 70 ? -5 : -2);
+
+        // Stochastic direction of change
+        const stochChg = m1.stochK - m1.stochKPrev;
+        if (stochChg > 5) add('stoch_dir', 2);
+        else if (stochChg < -5) add('stoch_dir', -2);
+    }
+
+    // 2.3 CCI Direction + extreme reversal
+    if (ok(m1.cci) && ok(m1.cciPrev)) {
+        const cciChg = m1.cci - m1.cciPrev;
+        if (cciChg > 20) add('cci_rising', 2);
+        else if (cciChg < -20) add('cci_falling', -2);
+
+        // CCI extreme + reversing
+        if (m1.cci > 150 && cciChg < 0) add('cci_rev', -3);
+        else if (m1.cci < -150 && cciChg > 0) add('cci_rev', 3);
+    }
+
+    // 2.4 MACD cross direction
     if (ok(m1.macd) && ok(m1.macdSig)) {
         add('macd', m1.macd > m1.macdSig ? 3 : -3);
     }
 
-    // 3.2 RSI momentum (NOT reversal — follow the direction)
-    if (ok(m1.rsi)) {
-        if (m1.rsi > 60) add('rsi', 2);
-        else if (m1.rsi < 40) add('rsi', -2);
+    // 2.5 Momentum direction of change
+    if (ok(m1.mom) && ok(m1.momPrev)) {
+        if (m1.mom > m1.momPrev) add('mom_dir', 2);
+        else if (m1.mom < m1.momPrev) add('mom_dir', -2);
     }
 
-    // 3.3 Stochastic position
-    if (ok(m1.stochK) && ok(m1.stochD)) {
-        add('stoch', m1.stochK > m1.stochD ? 2 : -2);
+    // 2.6 AO direction of change
+    if (ok(m1.ao) && ok(m1.aoPrev)) {
+        if (m1.ao > m1.aoPrev) add('ao_dir', 2);
+        else if (m1.ao < m1.aoPrev) add('ao_dir', -2);
     }
 
-    // 3.4 Momentum
-    if (ok(m1.mom)) {
-        add('momentum', m1.mom > 0 ? 2 : -2);
-    }
-
-    // 3.5 Awesome Oscillator
-    if (ok(m1.ao)) {
-        add('ao', m1.ao > 0 ? 2 : -2);
-    }
-
-    // 3.6 Current candle direction
-    if (ok(m1.open) && ok(m1.close)) {
-        add('candle_dir', m1.close > m1.open ? 1 : -1);
+    // 2.7 UO extreme zones
+    if (ok(m1.uo)) {
+        if (m1.uo > 70) add('uo_ob', -2);
+        else if (m1.uo < 30) add('uo_os', 2);
     }
 
     // ==========================================================
-    // SECTION 4: REVERSAL GUARD — only at TRUE EXTREMES
-    // Requires 4+ OB/OS indicators to agree
+    // SECTION 3: CANDLESTICK PATTERNS (~15%)
     // ==========================================================
-    let obSignals = 0, osSignals = 0;
-    if (ok(m1.rsi) && m1.rsi > 80) obSignals++;
-    if (ok(m1.rsi) && m1.rsi < 20) osSignals++;
-    if (ok(m1.stochK) && m1.stochK > 90) obSignals++;
-    if (ok(m1.stochK) && m1.stochK < 10) osSignals++;
-    if (ok(m1.wr) && m1.wr > -5) obSignals++;
-    if (ok(m1.wr) && m1.wr < -95) osSignals++;
-    if (ok(m1.cci) && m1.cci > 200) obSignals++;
-    if (ok(m1.cci) && m1.cci < -200) osSignals++;
-    if (ok(m5.rsi) && m5.rsi > 80) obSignals++;
-    if (ok(m5.rsi) && m5.rsi < 20) osSignals++;
 
-    if (obSignals >= 4) {
-        add('extreme_ob', -6);
-        breakdown['reversal_guard'] = 'TRUE extreme overbought (4+ indicators)';
+    // 3.1 Current 1m candle analysis
+    if (ok(m1.open) && ok(m1.close) && ok(m1.high) && ok(m1.low)) {
+        const bodySize = Math.abs(m1.close - m1.open);
+        const totalRange = m1.high - m1.low;
+        if (totalRange > 0) {
+            const bodyRatio = bodySize / totalRange;
+            const upperWick = m1.high - Math.max(m1.open, m1.close);
+            const lowerWick = Math.min(m1.open, m1.close) - m1.low;
+            const isBullish = m1.close > m1.open;
+
+            // Strong Marubozu — continuation
+            if (bodyRatio > 0.75) {
+                add('marubozu', isBullish ? 4 : -4);
+            }
+            // Pin bar — reversal at extremes
+            else if (bodyRatio < 0.3) {
+                if (upperWick > lowerWick * 2.5) {
+                    // Shooting star / bearish pin bar
+                    let pinScore = -3;
+                    if (ok(m1.bbUp) && m1.high >= m1.bbUp * 0.998) pinScore = -5;
+                    add('pin_bar', pinScore);
+                } else if (lowerWick > upperWick * 2.5) {
+                    // Hammer / bullish pin bar
+                    let pinScore = 3;
+                    if (ok(m1.bbLow) && m1.low <= m1.bbLow * 1.002) pinScore = 5;
+                    add('pin_bar', pinScore);
+                }
+            }
+
+            // Current candle direction — small weight
+            add('candle_1m', isBullish ? 1 : -1);
+        }
     }
-    if (osSignals >= 4) {
-        add('extreme_os', 6);
-        breakdown['reversal_guard'] = 'TRUE extreme oversold (4+ indicators)';
+
+    // 3.2 5m candle direction
+    if (ok(m5.open) && ok(m5.close)) {
+        add('candle_5m', m5.close > m5.open ? 1 : -1);
+    }
+
+    // ==========================================================
+    // SECTION 4: TREND CONTEXT — SUPPORTING (~15%)
+    // TV recs as LOW weight context, not primary
+    // ==========================================================
+
+    // 4.1 TV Recommendations — LOW weight (context only)
+    if (ok(m1.recAll)) add('tv_1m', Math.round(m1.recAll * 3));
+    if (ok(m5.recAll)) add('tv_5m', Math.round(m5.recAll * 2));
+    if (ok(m15.recAll)) add('tv_15m', Math.round(m15.recAll * 3));
+
+    // 4.2 ADX DI — current trend direction
+    if (ok(m1.pdi) && ok(m1.mdi)) {
+        add('adx_di', m1.pdi > m1.mdi ? 2 : -2);
+    }
+
+    // 4.3 Short-term EMA trend
+    if (ok(m1.ema5) && ok(m1.ema20)) {
+        add('ema_short', m1.ema5 > m1.ema20 ? 1 : -1);
+    }
+
+    // 4.4 5m MACD context
+    if (ok(m5.macd) && ok(m5.macdSig)) {
+        add('m5_macd', m5.macd > m5.macdSig ? 1 : -1);
     }
 
     // ==========================================================
@@ -328,36 +417,39 @@ function analyzeSignal(data) {
         tv_5m_rec: sf(m5.recAll, 3),
         tv_15m_rec: sf(m15.recAll, 3),
         rsi_1m: sf(m1.rsi, 2),
+        rsi_prev: sf(m1.rsiPrev, 2),
         stoch_k_1m: sf(m1.stochK, 2),
+        stoch_k_prev: sf(m1.stochKPrev, 2),
+        cci_1m: sf(m1.cci, 2),
+        cci_prev: sf(m1.cciPrev, 2),
         macd_1m: ok(m1.macd) && ok(m1.macdSig) ? (m1.macd > m1.macdSig ? 'Bullish' : 'Bearish') : null,
         adx_1m: sf(m1.adx, 2),
         adx_pdi_1m: sf(m1.pdi, 2),
         adx_mdi_1m: sf(m1.mdi, 2),
+        williams_r: sf(m1.wr, 2),
+        bb_pos: ok(m1.close) && ok(m1.bbUp) && ok(m1.bbLow) && (m1.bbUp - m1.bbLow) > 0
+            ? sf((m1.close - m1.bbLow) / (m1.bbUp - m1.bbLow), 3) : null,
         m5_trend: ok(m5.recAll) ? (m5.recAll > 0.1 ? 'CALL' : m5.recAll < -0.1 ? 'PUT' : 'NEUTRAL') : null,
         m15_trend: ok(m15.recAll) ? (m15.recAll > 0.1 ? 'CALL' : m15.recAll < -0.1 ? 'PUT' : 'NEUTRAL') : null,
-        m5_rsi: sf(m5.rsi, 2),
-        m15_rsi: sf(m15.rsi, 2),
         atr: sf(m1.atr, 6),
-        ob_signals: obSignals,
-        os_signals: osSignals,
         indicator_breakdown: breakdown,
     };
 
     // SKIP if score too weak
-    if (absScore < 6) {
+    if (absScore < 5) {
         return {
             direction: 'SKIP',
             strength: 0,
-            reason: 'No clear trend direction',
+            reason: 'No clear S/R or momentum signal',
             analysis
         };
     }
 
     const direction = score > 0 ? 'CALL' : 'PUT';
 
-    // Map score (6-60) → strength (55-95%)
-    const clampedScore = Math.min(absScore, 60);
-    let strength = Math.round(55 + (clampedScore - 6) * (40 / 54));
+    // Map score (5-50) → strength (55-95%)
+    const clampedScore = Math.min(absScore, 50);
+    let strength = Math.round(55 + (clampedScore - 5) * (40 / 45));
     strength = Math.min(95, Math.max(55, strength));
 
     return { direction, strength, analysis };
