@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finorix Pro - Account Status</title>
+    <link rel="icon" href="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png">
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#ff1493">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Finorix Pro">
+    <link rel="apple-touch-icon" href="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --pink: #ff1493;
+            --pink-light: #ff69b4;
+            --pink-dark: #c71585;
+            --green: #00e676;
+            --green-dark: #00c853;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #2a0a1a 30%, #1a0a1a 70%, #0a0a0a 100%);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: gradientShift 20s ease infinite;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background: linear-gradient(135deg, #0a0a0a 0%, #2a0a1a 30%, #1a0a1a 70%, #0a0a0a 100%); }
+            50% { background: linear-gradient(135deg, #0a0a0a 0%, #1a0a1a 30%, #2a0a1a 70%, #0a0a0a 100%); }
+        }
+
+        .trading-bg {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            background: radial-gradient(circle, var(--pink) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 15s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) translateX(0); opacity: 0.3; }
+            50% { transform: translateY(-100px) translateX(50px); opacity: 0.6; }
+        }
+
+        /* Loading spinner */
+        .loading-container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .spinner {
+            width: 50px; height: 50px;
+            border: 4px solid rgba(255, 20, 147, 0.2);
+            border-top: 4px solid var(--pink);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+        }
+
+        /* Main container */
+        .subscription-container {
+            position: relative;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.95), rgba(42, 10, 26, 0.95));
+            padding: 50px 40px;
+            border-radius: 20px;
+            border: 3px solid var(--pink);
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
+            text-align: center;
+            width: 90%;
+            max-width: 550px;
+            z-index: 1;
+            animation: borderGlow 8s infinite alternate;
+            display: none;
+        }
+
+        .subscription-container.show { display: block; }
+
+        @keyframes borderGlow {
+            0% { border-color: var(--pink); box-shadow: 0 0 40px rgba(255, 20, 147, 0.4); }
+            50% { border-color: var(--pink-light); box-shadow: 0 0 40px rgba(255, 105, 180, 0.4); }
+            100% { border-color: var(--pink-dark); box-shadow: 0 0 40px rgba(199, 21, 133, 0.4); }
+        }
+
+        /* Active state - green border */
+        .subscription-container.active-state {
+            border-color: var(--green);
+            box-shadow: 0 0 30px rgba(0, 230, 118, 0.3);
+            animation: borderGlowGreen 8s infinite alternate;
+        }
+
+        @keyframes borderGlowGreen {
+            0% { border-color: var(--green); box-shadow: 0 0 40px rgba(0, 230, 118, 0.4); }
+            50% { border-color: #69f0ae; box-shadow: 0 0 40px rgba(105, 240, 174, 0.4); }
+            100% { border-color: var(--green-dark); box-shadow: 0 0 40px rgba(0, 200, 83, 0.4); }
+        }
+
+        .subscription-logo {
+            width: 100px; height: 100px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.6);
+        }
+
+        .status-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .subscription-container h1 {
+            margin: 20px 0;
+            font-size: 32px;
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.6);
+        }
+
+        .pending-title { color: var(--pink); }
+        .active-title { color: var(--green); text-shadow: 0 0 20px rgba(0, 230, 118, 0.6) !important; }
+
+        .subscription-container h2 {
+            margin: 15px 0;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 20px;
+        }
+
+        .subscription-container p {
+            margin: 20px 0;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .user-email {
+            display: inline-block;
+            background: rgba(255, 20, 147, 0.15);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            border-radius: 8px;
+            padding: 8px 18px;
+            font-size: 14px;
+            color: var(--pink-light);
+            margin-bottom: 15px;
+        }
+
+        /* Pending section */
+        .contact-info {
+            background: rgba(255, 20, 147, 0.1);
+            border: 2px solid rgba(255, 20, 147, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .contact-info h3 {
+            color: var(--pink);
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .contact-info p {
+            font-size: 15px;
+            margin: 10px 0;
+        }
+
+        .telegram-btn {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #0088cc, #006699);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 900;
+            font-size: 16px;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+
+        .telegram-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 136, 204, 0.6);
+        }
+
+        /* Active section */
+        .active-info {
+            background: rgba(0, 230, 118, 0.08);
+            border: 2px solid rgba(0, 230, 118, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            margin: 25px 0;
+        }
+
+        .active-info h3 {
+            color: var(--green);
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
+        .active-info p {
+            font-size: 15px;
+            margin: 10px 0;
+        }
+
+        .signal-btn {
+            display: inline-block;
+            padding: 18px 50px;
+            background: linear-gradient(135deg, var(--green), var(--green-dark));
+            color: #000;
+            text-decoration: none;
+            border: none;
+            border-radius: 12px;
+            font-weight: 900;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+            letter-spacing: 1px;
+            animation: signalPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes signalPulse {
+            0%, 100% { box-shadow: 0 0 20px rgba(0, 230, 118, 0.4); }
+            50% { box-shadow: 0 0 40px rgba(0, 230, 118, 0.8); }
+        }
+
+        .signal-btn:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 8px 30px rgba(0, 230, 118, 0.7);
+        }
+
+        /* Balance Card */
+        .balance-card {
+            background: rgba(255, 20, 147, 0.06);
+            border: 1.5px solid rgba(255, 20, 147, 0.25);
+            border-radius: 14px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .balance-card .balance-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 8px;
+        }
+        .balance-card .balance-value {
+            font-size: 32px;
+            font-weight: 900;
+            color: #ff1493;
+            text-shadow: 0 0 20px rgba(255, 20, 147, 0.4);
+        }
+        .balance-card .balance-value.has-balance {
+            color: var(--green);
+            text-shadow: 0 0 20px rgba(0, 230, 118, 0.4);
+        }
+        .balance-card .balance-status {
+            font-size: 12px;
+            margin-top: 8px;
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .balance-card .balance-status.warning {
+            color: #ffa726;
+        }
+        .deposit-complete-btn {
+            display: inline-block;
+            padding: 14px 36px;
+            background: linear-gradient(135deg, #ff1493, #c71585);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+            letter-spacing: 0.5px;
+        }
+        .deposit-complete-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 20, 147, 0.5);
+        }
+        .deposit-complete-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .deposit-link {
+            display: inline-block;
+            color: #ff69b4;
+            font-size: 13px;
+            margin-top: 10px;
+            text-decoration: underline;
+        }
+
+        .expiry-badge {
+            display: inline-block;
+            background: rgba(255, 165, 0, 0.15);
+            border: 1px solid rgba(255, 165, 0, 0.4);
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-size: 13px;
+            color: #ffa726;
+            margin-top: 15px;
+        }
+
+        /* Countdown Timer */
+        .countdown-container {
+            margin-top: 20px;
+        }
+
+        .countdown-label {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 12px;
+        }
+
+        .countdown-timer {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .countdown-unit {
+            background: rgba(0, 230, 118, 0.08);
+            border: 1px solid rgba(0, 230, 118, 0.25);
+            border-radius: 12px;
+            padding: 12px 10px;
+            min-width: 70px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .countdown-unit:hover {
+            border-color: rgba(0, 230, 118, 0.5);
+            box-shadow: 0 0 15px rgba(0, 230, 118, 0.15);
+        }
+
+        .countdown-value {
+            font-size: 28px;
+            font-weight: 900;
+            color: var(--green);
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .countdown-name {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 6px;
+        }
+
+        /* Urgent countdown (less than 1 hour) */
+        .countdown-urgent .countdown-unit {
+            background: rgba(255, 50, 50, 0.1);
+            border-color: rgba(255, 50, 50, 0.35);
+        }
+
+        .countdown-urgent .countdown-value {
+            color: #ff5555;
+            animation: urgentBlink 1s ease-in-out infinite;
+        }
+
+        /* Warning countdown (less than 1 day) */
+        .countdown-warning .countdown-unit {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: rgba(255, 165, 0, 0.35);
+        }
+
+        .countdown-warning .countdown-value {
+            color: #ffa726;
+        }
+
+        @keyframes urgentBlink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .countdown-expired {
+            color: #ff5555;
+            font-size: 18px;
+            font-weight: 700;
+            padding: 15px;
+            background: rgba(255, 50, 50, 0.1);
+            border: 1px solid rgba(255, 50, 50, 0.3);
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        /* Bottom links */
+        .bottom-actions {
+            margin-top: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        .action-link {
+            color: var(--pink);
+            text-decoration: none;
+            font-size: 14px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .action-link:hover {
+            color: var(--pink-light);
+            text-shadow: 0 0 10px rgba(255, 20, 147, 0.5);
+        }
+
+        /* Popup */
+        .popup-overlay {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+        }
+
+        .popup-overlay.show { display: flex; }
+
+        .popup-modal {
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.98), rgba(42, 10, 26, 0.98));
+            border: 3px solid var(--pink);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 30px rgba(255, 20, 147, 0.3);
+            text-align: center;
+            animation: popupSlideIn 0.4s ease-out;
+        }
+
+        @keyframes popupSlideIn {
+            from { transform: scale(0.7); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .popup-icon { font-size: 60px; margin-bottom: 20px; }
+        .popup-title { font-size: 26px; font-weight: 900; color: var(--pink); margin-bottom: 20px; }
+        .popup-message { font-size: 16px; color: rgba(255, 255, 255, 0.85); margin-bottom: 30px; line-height: 1.8; }
+
+        .popup-btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 900;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+        }
+
+        .popup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 20, 147, 0.6);
+        }
+
+        .hidden { display: none !important; }
+
+        /* Account Number */
+        .account-number-box {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 20, 147, 0.08);
+            border: 1px solid rgba(255, 20, 147, 0.25);
+            border-radius: 10px;
+            padding: 8px 18px;
+            margin-bottom: 12px;
+        }
+
+        .account-number-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .account-number-value {
+            font-size: 18px;
+            font-weight: 900;
+            color: var(--pink-light);
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .copy-btn {
+            background: rgba(255, 20, 147, 0.2);
+            border: 1px solid rgba(255, 20, 147, 0.3);
+            color: var(--pink-light);
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255, 20, 147, 0.4);
+            box-shadow: 0 0 10px rgba(255, 20, 147, 0.3);
+        }
+
+        .copy-btn.copied {
+            background: rgba(0, 230, 118, 0.2);
+            border-color: rgba(0, 230, 118, 0.4);
+            color: var(--green);
+        }
+
+        /* Bonus Offer Banner */
+        .bonus-offer {
+            background: linear-gradient(135deg, rgba(255,20,147,0.12), rgba(199,21,133,0.08));
+            border: 1.5px solid rgba(255,20,147,0.35);
+            border-radius: 14px;
+            padding: 18px 16px;
+            margin: 16px 0;
+            position: relative;
+            overflow: hidden;
+        }
+        .bonus-offer::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,20,147,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .bonus-offer-tag {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--pink), var(--pink-dark));
+            color: white;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 4px 10px;
+            border-radius: 6px;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .bonus-offer-title {
+            font-size: 18px;
+            font-weight: 900;
+            color: white;
+            margin-bottom: 6px;
+        }
+        .bonus-offer-title span {
+            color: var(--pink);
+        }
+        .bonus-offer-desc {
+            font-size: 13px;
+            color: rgba(255,255,255,0.6);
+            line-height: 1.5;
+        }
+        .bonus-offer-desc strong {
+            color: rgba(255,255,255,0.85);
+        }
+
+        @media (max-width: 768px) {
+            .subscription-container { padding: 40px 25px; }
+            .subscription-container h1 { font-size: 26px; }
+            .subscription-container h2 { font-size: 18px; }
+            .signal-btn { padding: 15px 40px; font-size: 18px; }
+        }
+
+        /* Device Kicked Overlay */
+        #device-kicked-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 999999;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(15px);
+        }
+        #device-kicked-overlay.show {
+            display: flex;
+        }
+        .kicked-card {
+            background: linear-gradient(145deg, #0d0d0d, #1a0a14);
+            border: 2px solid #ff3333;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255, 50, 50, 0.3);
+            animation: kickedSlideIn 0.4s ease-out;
+        }
+        @keyframes kickedSlideIn {
+            from { transform: scale(0.8) translateY(30px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .kicked-card .kicked-icon {
+            width: 70px; height: 70px;
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+            box-shadow: 0 0 30px rgba(255, 50, 50, 0.4);
+        }
+        .kicked-card h2 {
+            color: #ff3333;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .kicked-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .kicked-card .kicked-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+            color: #fff;
+            padding: 13px 36px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(255, 50, 50, 0.35);
+            transition: transform 0.2s;
+        }
+        .kicked-card .kicked-btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="trading-bg" id="tradingBg"></div>
+
+    <!-- Device Kicked Overlay -->
+    <div id="device-kicked-overlay">
+        <div class="kicked-card">
+            <div class="kicked-icon">📱</div>
+            <h2>Logged In On Another Device</h2>
+            <p>Your account has been logged in from another device. Only one device can be active at a time.</p>
+            <button class="kicked-btn" onclick="window.location.href='login'">GO TO LOGIN</button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading-container" id="loading-state">
+        <div class="spinner"></div>
+        <div class="loading-text">Checking account status...</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="subscription-container" id="main-container">
+        <img src="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png" alt="Finorix Pro Logo" class="subscription-logo">
+        
+        <div class="status-icon" id="status-icon"><i class="fas fa-lock"></i></div>
+        
+        <h1 id="main-title" class="pending-title">Account Status</h1>
+        <div class="account-number-box hidden" id="account-number-box">
+            <div>
+                <div class="account-number-label">Account ID</div>
+                <div class="account-number-value" id="account-number-display">#0000000</div>
+            </div>
+            <button class="copy-btn" id="copy-btn" onclick="copyAccountNumber()"><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <div class="user-email" id="user-email"></div>
+        <h2 id="sub-title"></h2>
+        
+        <p id="status-message"></p>
+
+        <!-- Pending Section - Payment -->
+        <div id="pending-section" class="hidden">
+            <div class="contact-info">
+                <h3><i class="fas fa-crown" style="margin-right:6px;"></i> Subscribe to Finorix Bot</h3>
+                <p><strong>Get 30-day access to Finorix Bot trading signals.</strong></p>
+                <p style="margin-top:8px;">Pay monthly — renew anytime!</p>
+            </div>
+
+            <!-- Price Card -->
+            <div style="margin-top:15px;background:linear-gradient(135deg,rgba(255,20,147,0.12),rgba(199,21,133,0.08));border:2px solid rgba(255,20,147,0.4);border-radius:16px;padding:30px 20px;text-align:center;">
+                <p style="color:rgba(255,255,255,0.5);font-size:12px;text-transform:uppercase;letter-spacing:2.5px;margin-bottom:8px;font-weight:600;">Subscription Price</p>
+                <p id="price-display" style="font-size:48px;font-weight:900;color:var(--pink);margin:10px 0;text-shadow:0 0 25px rgba(255,20,147,0.4);">$... <span style="font-size:18px;color:rgba(255,255,255,0.5);font-weight:600;">USD</span></p>
+                <p style="color:rgba(255,255,255,0.6);font-size:13px;margin-bottom:5px;"><i class="fas fa-calendar-alt" style="margin-right:4px;color:var(--pink);"></i> 30 Days Access</p>
+                <p style="color:rgba(255,255,255,0.6);font-size:13px;"><i class="fas fa-bolt" style="margin-right:4px;color:var(--pink);"></i> Instant Activation</p>
+            </div>
+
+            <!-- Features -->
+            <div style="text-align:left;margin:20px 0;background:rgba(0,230,118,0.06);border:1.5px solid rgba(0,230,118,0.2);border-radius:14px;padding:18px 20px;">
+                <p style="color:var(--green);font-weight:700;font-size:14px;margin-bottom:12px;"><i class="fas fa-check-circle" style="margin-right:6px;"></i> What you get:</p>
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:8px 0;"><i class="fas fa-chart-bar" style="color:var(--green);margin-right:8px;width:16px;"></i> Real-time trading signals</p>
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:8px 0;"><i class="fas fa-clock" style="color:var(--green);margin-right:8px;width:16px;"></i> Instant account activation</p>
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:8px 0;"><i class="fas fa-shield-alt" style="color:var(--green);margin-right:8px;width:16px;"></i> Secure crypto payment</p>
+            </div>
+
+            <!-- Pay Button -->
+            <button id="pay-now-btn" onclick="showPaymentMethodSelector()" style="
+                width:100%;
+                padding:18px;
+                background:linear-gradient(135deg,var(--pink),var(--pink-dark));
+                color:white;
+                border:none;
+                border-radius:12px;
+                font-weight:900;
+                font-size:18px;
+                cursor:pointer;
+                transition:all 0.3s;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                gap:10px;
+                letter-spacing:0.5px;
+                box-shadow:0 4px 20px rgba(255,20,147,0.4);
+            ">
+                <i class="fas fa-lock"></i>
+                <span id="pay-btn-text">PAY — ACTIVATE NOW</span>
+                <span id="pay-spinner" style="display:none;width:20px;height:20px;border:3px solid rgba(255,255,255,0.3);border-top:3px solid white;border-radius:50%;animation:spin 1s linear infinite;"></span>
+            </button>
+            <p style="color:rgba(255,255,255,0.35);font-size:12px;margin-top:12px;"><i class="fas fa-shield-alt" style="margin-right:4px;"></i> Pay with Binance Pay / Crypto</p>
+            <div id="pay-error" style="color:#ff5555;font-size:13px;margin-top:10px;display:none;"></div>
+        </div>
+
+        <!-- Active Section -->
+        <div id="active-section" class="hidden">
+            <div class="active-info">
+                <h3><i class="fas fa-check-circle" style="margin-right:6px;"></i> Account Active</h3>
+                <p>Your subscription is active. Enjoy Finorix Pro trading signals!</p>
+                <p id="expiry-info"></p>
+            </div>
+            
+            <button class="signal-btn" id="signal-btn" onclick="goToSignals()">
+                <i class="fas fa-chart-bar" style="margin-right:6px;"></i> SIGNAL
+            </button>
+            
+            <div id="expiry-badge-container"></div>
+            <div id="countdown-container" class="countdown-container hidden"></div>
+        </div>
+
+        <!-- Banned Section -->
+        <div id="banned-section" class="hidden">
+            <div class="contact-info" style="border-color: rgba(255, 50, 50, 0.4); background: rgba(255, 50, 50, 0.08);">
+                <h3 style="color: #ff5555;"><i class="fas fa-ban" style="margin-right:6px;"></i> Account Suspended</h3>
+                <p>Your account has been suspended by the administrator.</p>
+                <p>If you believe this is a mistake, please contact support on Telegram.</p>
+            </div>
+            
+            <a href="https://t.me/JisanX" class="telegram-btn" target="_blank">
+                <i class="fab fa-telegram" style="margin-right:6px;"></i> Contact on Telegram
+            </a>
+        </div>
+
+        <!-- Device Limit Section -->
+        <div id="device-limit-section" class="hidden">
+            <div class="contact-info" style="border-color: rgba(255, 165, 0, 0.4); background: rgba(255, 165, 0, 0.08);">
+                <h3 style="color: #ffa726;"><i class="fas fa-mobile-alt" style="margin-right:6px;"></i> Device Limit Reached</h3>
+                <p>You have reached the maximum number of devices allowed for your account.</p>
+                <p>Please contact support to increase your device limit or remove old devices.</p>
+            </div>
+            
+            <a href="https://t.me/JisanX" class="telegram-btn" target="_blank">
+                <i class="fab fa-telegram" style="margin-right:6px;"></i> Contact on Telegram
+            </a>
+        </div>
+
+        <!-- Install App -->
+        <div id="install-app-section" style="display:none;margin-top:20px;">
+            <button id="install-btn" onclick="installApp()" style="
+                width:100%;
+                padding:14px 20px;
+                background:linear-gradient(135deg,rgba(255,20,147,0.15),rgba(199,21,133,0.1));
+                border:1.5px solid rgba(255,20,147,0.35);
+                border-radius:14px;
+                color:#fff;
+                font-size:15px;
+                font-weight:700;
+                cursor:pointer;
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                gap:10px;
+                transition:all 0.3s ease;
+            ">
+                <i class="fas fa-mobile-alt" style="font-size:20px;color:var(--pink);"></i>
+                <span>Install Mobile App</span>
+                <span style="background:var(--pink);color:#fff;font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;">FREE</span>
+            </button>
+        </div>
+
+        <!-- iOS Install Guide -->
+        <div id="ios-install-guide" style="display:none;margin-top:15px;background:rgba(255,255,255,0.03);border:1.5px solid rgba(255,20,147,0.2);border-radius:14px;padding:18px 20px;">
+            <p style="color:var(--pink);font-size:14px;font-weight:700;margin-bottom:12px;"><i class="fas fa-info-circle" style="margin-right:6px;"></i> Install on iPhone/iPad</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5;"><span style="color:var(--pink);font-weight:700;">1.</span> Tap the <i class="fas fa-share-square" style="color:var(--pink);"></i> Share button in Safari</p>
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5;"><span style="color:var(--pink);font-weight:700;">2.</span> Scroll down and tap <strong style="color:#fff;">"Add to Home Screen"</strong></p>
+                <p style="color:rgba(255,255,255,0.7);font-size:13px;line-height:1.5;"><span style="color:var(--pink);font-weight:700;">3.</span> Tap <strong style="color:#fff;">"Add"</strong> to install</p>
+            </div>
+            <button onclick="document.getElementById('ios-install-guide').style.display='none'" style="margin-top:12px;background:rgba(255,20,147,0.15);border:1px solid rgba(255,20,147,0.3);color:var(--pink);padding:8px 20px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;width:100%;">Got it!</button>
+        </div>
+
+        <!-- Bottom Actions -->
+        <div class="bottom-actions">
+            <a class="action-link" onclick="logout()"><i class="fas fa-sign-out-alt" style="margin-right:4px;"></i> Logout</a>
+            <a class="action-link" onclick="checkStatus()"><i class="fas fa-sync-alt" style="margin-right:4px;"></i> Refresh Status</a>
+        </div>
+    </div>
+
+
+
+    <!-- Payment Method Selector Modal -->
+    <div id="payment-method-overlay" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(8px);z-index:10000;align-items:center;justify-content:center;">
+        <div style="background:linear-gradient(145deg,#1a1a2e,#16213e);border-radius:20px;padding:30px 24px;max-width:380px;width:90%;border:1px solid rgba(255,255,255,0.1);box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+            <div style="text-align:center;margin-bottom:24px;">
+                <i class="fas fa-wallet" style="font-size:36px;color:var(--pink);margin-bottom:12px;"></i>
+                <h3 style="color:white;font-size:20px;font-weight:800;margin:0;">Choose Payment Method</h3>
+                <p style="color:rgba(255,255,255,0.5);font-size:13px;margin-top:6px;">Select how you want to pay</p>
+            </div>
+
+            <!-- Binance Pay Option -->
+            <button id="pm-btn-binance" onclick="selectPaymentMethod('binance')" style="display:none;width:100%;padding:16px 18px;background:rgba(240,185,11,0.08);border:1.5px solid rgba(240,185,11,0.25);border-radius:14px;color:white;cursor:pointer;align-items:center;gap:14px;margin-bottom:12px;transition:all 0.3s;">
+                <div style="width:48px;height:48px;border-radius:12px;background:rgba(240,185,11,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <img src="https://cdn.jsdelivr.net/gh/nicehash/Logos@main/Currencies/BNB.svg" style="width:28px;height:28px;" onerror="this.outerHTML='<i class=\'fab fa-bitcoin\' style=\'font-size:22px;color:#f0b90b;\'></i>'">
+                </div>
+                <div style="text-align:left;flex:1;">
+                    <div style="font-weight:700;font-size:15px;">Binance Pay</div>
+                    <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:2px;">Pay with USDT via Binance</div>
+                    <div id="binance-price-label" style="color:#f0b90b;font-size:13px;font-weight:700;margin-top:4px;"></div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:rgba(255,255,255,0.3);"></i>
+            </button>
+
+            <!-- Crypto (OxaPay) Option -->
+            <button id="pm-btn-crypto" onclick="selectPaymentMethod('usdt')" style="display:none;width:100%;padding:16px 18px;background:rgba(0,230,118,0.08);border:1.5px solid rgba(0,230,118,0.25);border-radius:14px;color:white;cursor:pointer;align-items:center;gap:14px;margin-bottom:12px;transition:all 0.3s;">
+                <div style="width:48px;height:48px;border-radius:12px;background:rgba(0,230,118,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-coins" style="font-size:20px;color:#00e676;"></i>
+                </div>
+                <div style="text-align:left;flex:1;">
+                    <div style="font-weight:700;font-size:15px;">Crypto</div>
+                    <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:2px;">Pay with Crypto</div>
+                    <div id="usdt-price-label" style="color:#00e676;font-size:13px;font-weight:700;margin-top:4px;"></div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:rgba(255,255,255,0.3);"></i>
+            </button>
+
+            <!-- RupantorPay BDT Option -->
+            <button id="pm-btn-rupantorpay" onclick="selectPaymentMethod('bdt')" style="display:none;width:100%;padding:16px 18px;background:rgba(233,30,99,0.08);border:1.5px solid rgba(233,30,99,0.25);border-radius:14px;color:white;cursor:pointer;align-items:center;gap:14px;margin-bottom:20px;transition:all 0.3s;">
+                <div style="width:48px;height:48px;border-radius:12px;background:rgba(233,30,99,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <i class="fas fa-money-bill-wave" style="font-size:20px;color:#e91e63;"></i>
+                </div>
+                <div style="text-align:left;flex:1;">
+                    <div style="font-weight:700;font-size:15px;">বাংলাদেশ (BDT)</div>
+                    <div style="color:rgba(255,255,255,0.5);font-size:12px;margin-top:2px;">bKash, Nagad, Rocket — RupantorPay</div>
+                    <div id="bdt-price-label" style="color:#e91e63;font-size:13px;font-weight:700;margin-top:4px;"></div>
+                </div>
+                <i class="fas fa-chevron-right" style="color:rgba(255,255,255,0.3);"></i>
+            </button>
+
+            <button onclick="closePaymentMethodSelector()" style="width:100%;padding:12px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:rgba(255,255,255,0.5);font-size:14px;cursor:pointer;">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Popup Overlay -->
+    <div class="popup-overlay" id="popup-overlay">
+        <div class="popup-modal">
+            <div class="popup-icon" id="popup-icon"><i class="fas fa-exclamation-triangle"></i></div>
+            <div class="popup-title" id="popup-title">Notice</div>
+            <div class="popup-message" id="popup-message"></div>
+            <button class="popup-btn" onclick="closePopup()">OK</button>
+        </div>
+    </div>
+
+    <script>
+        // Background particles
+        function createBackground() {
+            const bg = document.getElementById('tradingBg');
+            const count = window.innerWidth <= 768 ? 10 : 20;
+            for (let i = 0; i < count; i++) {
+                const p = document.createElement('div');
+                p.className = 'particle';
+                p.style.width = `${Math.random() * 100 + 50}px`;
+                p.style.height = p.style.width;
+                p.style.left = `${Math.random() * 100}%`;
+                p.style.top = `${Math.random() * 100}%`;
+                p.style.animationDelay = `${Math.random() * 5}s`;
+                p.style.animationDuration = `${10 + Math.random() * 10}s`;
+                bg.appendChild(p);
+            }
+        }
+        createBackground();
+
+        const AUTH_API_BASE = 'https://finorixpro.pythonanywhere.com'; // Production
+        // const AUTH_API_BASE = 'http://127.0.0.1:5000'; // Local
+        const BINANCEPAY_PROXY = '/api/binancepay'; // Vercel serverless proxy for Binance Pay
+        const RUPANTORPAY_PROXY = '/api/rupantorpay'; // Vercel serverless proxy for RupantorPay
+
+        // Payment methods enabled status (fetched from server)
+        let enabledMethods = { binance: true, crypto: true, rupantorpay: true };
+
+        function showPopup(title, message, icon = '<i class="fas fa-exclamation-triangle"></i>') {
+            document.getElementById('popup-icon').innerHTML = icon;
+            document.getElementById('popup-title').textContent = title;
+            document.getElementById('popup-message').innerHTML = message;
+            document.getElementById('popup-overlay').classList.add('show');
+        }
+
+        function closePopup() {
+            document.getElementById('popup-overlay').classList.remove('show');
+        }
+
+        // Copy account number
+        function copyAccountNumber() {
+            const acctNum = document.getElementById('account-number-display').textContent;
+            navigator.clipboard.writeText(acctNum).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }).catch(() => {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = acctNum;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                const btn = document.getElementById('copy-btn');
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.innerHTML = '<i class="fas fa-copy"></i> Copy';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+
+        // Show account number
+        function showAccountNumber(accountNumber) {
+            const box = document.getElementById('account-number-box');
+            if (accountNumber) {
+                document.getElementById('account-number-display').textContent = '#' + accountNumber;
+                box.classList.remove('hidden');
+            } else {
+                box.classList.add('hidden');
+            }
+        }
+
+        document.getElementById('popup-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closePopup();
+        });
+
+        function logout() {
+            localStorage.removeItem('finorix_auth_token');
+            localStorage.removeItem('finorix_auth_email');
+            localStorage.removeItem('finorix_auth_status');
+            localStorage.removeItem('finorix_login_time');
+            localStorage.removeItem('finorix_session_token');
+            window.location.href = 'login';
+        }
+
+        function goToSignals() {
+            window.location.href = '/';
+        }
+
+        // Check if user is logged in
+        function requireAuth() {
+            const token = localStorage.getItem('finorix_auth_token');
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!token || !email) {
+                window.location.href = 'login';
+                return false;
+            }
+            return true;
+        }
+
+        // Check user status from server
+        async function checkStatus() {
+            if (!requireAuth()) return;
+
+            const email = localStorage.getItem('finorix_auth_email');
+            const loadingState = document.getElementById('loading-state');
+            const mainContainer = document.getElementById('main-container');
+
+            // Show loading
+            loadingState.style.display = 'block';
+            mainContainer.classList.remove('show');
+
+            try {
+                const sessionToken = localStorage.getItem('finorix_session_token');
+                const response = await fetch(`${AUTH_API_BASE}/api/auth/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, session_token: sessionToken })
+                });
+
+                const result = await response.json();
+
+                // Kicked from another device
+                if (result.status === 'logged_out') {
+                    localStorage.removeItem('finorix_auth_token');
+                    localStorage.removeItem('finorix_auth_email');
+                    localStorage.removeItem('finorix_auth_status');
+                    localStorage.removeItem('finorix_login_time');
+                    localStorage.removeItem('finorix_session_token');
+                    document.getElementById('device-kicked-overlay').classList.add('show');
+                    return;
+                }
+
+                const status = result.status || 'pending';
+
+                // Update localStorage status
+                localStorage.setItem('finorix_auth_status', status);
+
+                // Display email
+                document.getElementById('user-email').textContent = email;
+
+                // Hide loading, show main
+                loadingState.style.display = 'none';
+                mainContainer.classList.add('show');
+
+                if (status === 'active') {
+                    // Check device limit from localStorage (set during login)
+                    const deviceLimitFlag = localStorage.getItem('finorix_device_limit');
+                    if (deviceLimitFlag === 'reached') {
+                        showDeviceLimitState(result);
+                    } else {
+                        showActiveState(result);
+                    }
+                } else if (status === 'banned') {
+                    showBannedState(result);
+                } else if (status === 'not_found') {
+                    showPopup('Account Issue', 'Account not found. Please register again.');
+                    setTimeout(() => logout(), 3000);
+                } else {
+                    showPendingState(result);
+                }
+
+            } catch (error) {
+                console.error('Status check error:', error);
+                
+                // Fallback: use localStorage status
+                const savedStatus = localStorage.getItem('finorix_auth_status');
+                document.getElementById('user-email').textContent = email;
+                loadingState.style.display = 'none';
+                mainContainer.classList.add('show');
+
+                if (savedStatus === 'active') {
+                    showActiveState({});
+                } else {
+                    showPendingState({});
+                }
+            }
+        }
+
+        function showBannedState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.remove('active-state');
+            container.style.borderColor = '#ff5555';
+            container.style.boxShadow = '0 0 30px rgba(255, 50, 50, 0.3)';
+            container.style.animation = 'none';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-ban"></i>';
+            document.getElementById('main-title').textContent = 'Account Suspended';
+            document.getElementById('main-title').className = 'pending-title';
+            document.getElementById('main-title').style.color = '#ff5555';
+            document.getElementById('sub-title').textContent = 'Your account has been banned';
+            document.getElementById('status-message').textContent = 'Your access to Finorix Pro has been revoked by the administrator.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.add('hidden');
+            document.getElementById('active-section').classList.add('hidden');
+            document.getElementById('banned-section').classList.remove('hidden');
+            document.getElementById('device-limit-section').classList.add('hidden');
+        }
+
+        function showPendingState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.remove('active-state');
+            container.style.borderColor = '';
+            container.style.boxShadow = '';
+            container.style.animation = '';
+            document.getElementById('main-title').style.color = '';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-crown"></i>';
+            document.getElementById('main-title').textContent = 'Subscribe Now';
+            document.getElementById('main-title').className = 'pending-title';
+            document.getElementById('sub-title').textContent = 'Activate your Finorix Bot access';
+            document.getElementById('status-message').textContent = 'Purchase a subscription to unlock premium trading signals and get 30-day access to Finorix Bot.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.remove('hidden');
+            document.getElementById('active-section').classList.add('hidden');
+            document.getElementById('banned-section').classList.add('hidden');
+            document.getElementById('device-limit-section').classList.add('hidden');
+        }
+
+        function showActiveState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.add('active-state');
+            container.style.borderColor = '';
+            container.style.boxShadow = '';
+            container.style.animation = '';
+            document.getElementById('main-title').style.color = '';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-check-circle"></i>';
+            document.getElementById('main-title').textContent = 'Account Active';
+            document.getElementById('main-title').className = 'active-title';
+            document.getElementById('sub-title').textContent = 'Your subscription is active';
+            document.getElementById('status-message').textContent = 'You have full access to Finorix Pro trading signals.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.add('hidden');
+            document.getElementById('active-section').classList.remove('hidden');
+            document.getElementById('banned-section').classList.add('hidden');
+            document.getElementById('device-limit-section').classList.add('hidden');
+
+            // Show expiry info with countdown
+            const expiryContainer = document.getElementById('expiry-badge-container');
+            const countdownContainer = document.getElementById('countdown-container');
+            if (data.expiry_date) {
+                document.getElementById('expiry-info').textContent = 'Expires: ' + data.expiry_date;
+                expiryContainer.innerHTML = '';
+                countdownContainer.classList.remove('hidden');
+                startCountdown(data.expiry_date);
+            } else {
+                document.getElementById('expiry-info').textContent = 'No expiry set';
+                expiryContainer.innerHTML = '';
+                countdownContainer.classList.add('hidden');
+                stopCountdown();
+            }
+        }
+
+        function showDeviceLimitState(data) {
+            const container = document.getElementById('main-container');
+            container.classList.remove('active-state');
+            container.style.borderColor = '#ffa726';
+            container.style.boxShadow = '0 0 30px rgba(255, 165, 0, 0.3)';
+            container.style.animation = 'none';
+            document.getElementById('main-title').style.color = '#ffa726';
+
+            document.getElementById('status-icon').innerHTML = '<i class="fas fa-mobile-alt"></i>';
+            document.getElementById('main-title').textContent = 'Device Limit Reached';
+            document.getElementById('main-title').className = 'pending-title';
+            document.getElementById('sub-title').textContent = 'Maximum devices exceeded';
+            document.getElementById('status-message').textContent = 'You have reached the maximum number of allowed devices. Please contact support to resolve this issue.';
+
+            showAccountNumber(data && data.account_number);
+
+            document.getElementById('pending-section').classList.add('hidden');
+            document.getElementById('active-section').classList.add('hidden');
+            document.getElementById('banned-section').classList.add('hidden');
+            document.getElementById('device-limit-section').classList.remove('hidden');
+        }
+
+        // ===== PAYMENT METHOD SELECTOR =====
+        let cachedPriceUSD = 0;
+        let cachedBDTPrice = 0;
+
+        async function loadPaymentMethodsStatus() {
+            try {
+                const res = await fetch(`${AUTH_API_BASE}/api/auth/payment-methods-status`);
+                const data = await res.json();
+                if (data.success) {
+                    enabledMethods.binance = data.binance;
+                    enabledMethods.crypto = data.crypto;
+                    enabledMethods.rupantorpay = data.rupantorpay;
+                }
+            } catch (e) { console.error('Failed to load payment methods status:', e); }
+
+            // Also fetch BDT rate
+            try {
+                const res = await fetch(`${AUTH_API_BASE}/api/auth/bdt-rate`);
+                const data = await res.json();
+                if (data.success) {
+                    cachedBDTPrice = data.bdt_price;
+                }
+            } catch (e) {}
+        }
+        loadPaymentMethodsStatus();
+
+        function showPaymentMethodSelector() {
+            const overlay = document.getElementById('payment-method-overlay');
+            overlay.style.display = 'flex';
+
+            // Show/hide based on enabled status
+            const binBtn = document.getElementById('pm-btn-binance');
+            const cryptoBtn = document.getElementById('pm-btn-crypto');
+            const bdtBtn = document.getElementById('pm-btn-rupantorpay');
+
+            binBtn.style.display = enabledMethods.binance ? 'flex' : 'none';
+            cryptoBtn.style.display = enabledMethods.crypto ? 'flex' : 'none';
+            bdtBtn.style.display = enabledMethods.rupantorpay ? 'flex' : 'none';
+
+            if (cachedPriceUSD > 0) {
+                document.getElementById('usdt-price-label').textContent = '$' + cachedPriceUSD.toFixed(2) + ' USD';
+                document.getElementById('binance-price-label').textContent = '$' + cachedPriceUSD.toFixed(2) + ' USDT';
+            }
+            if (cachedBDTPrice > 0) {
+                document.getElementById('bdt-price-label').textContent = '৳' + cachedBDTPrice.toFixed(0) + ' BDT';
+            } else if (cachedPriceUSD > 0) {
+                document.getElementById('bdt-price-label').textContent = '৳' + (cachedPriceUSD * 120).toFixed(0) + ' BDT';
+            }
+        }
+
+        function closePaymentMethodSelector() {
+            document.getElementById('payment-method-overlay').style.display = 'none';
+        }
+
+        function selectPaymentMethod(method) {
+            closePaymentMethodSelector();
+            if (method === 'usdt') {
+                createPayment();
+            } else if (method === 'binance') {
+                createBinancePayment();
+            } else if (method === 'bdt') {
+                createBDTPayment();
+            }
+        }
+
+        // ===== BINANCE PAY (Manual Transfer + Regular API Verification) =====
+        let binancePollInterval = null;
+        let binanceOrderInfo = null;
+
+        async function createBinancePayment() {
+            const btn = document.getElementById('pay-now-btn');
+            const btnText = document.getElementById('pay-btn-text');
+            const spinner = document.getElementById('pay-spinner');
+            const errorEl = document.getElementById('pay-error');
+            const email = localStorage.getItem('finorix_auth_email');
+
+            if (!email) {
+                showPopup('Session Expired', 'Please login again.');
+                setTimeout(() => logout(), 2000);
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            btn.disabled = true;
+            btnText.textContent = 'Creating Binance payment...';
+            spinner.style.display = 'inline-block';
+
+            try {
+                // Step 1: Create order record on server + get Binance config
+                const [orderRes, infoRes] = await Promise.all([
+                    fetch(`${AUTH_API_BASE}/api/auth/create-binance-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    }),
+                    fetch(`${AUTH_API_BASE}/api/auth/binance-info`)
+                ]);
+                const orderData = await orderRes.json();
+                const infoData = await infoRes.json();
+
+                if (!orderData.success) {
+                    errorEl.textContent = orderData.message || 'Failed to create order.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                if (!infoData.enabled) {
+                    errorEl.textContent = 'Binance Pay is currently disabled. Please try Crypto payment.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                if (!infoData.uid) {
+                    errorEl.textContent = 'Binance Pay is not configured. Please contact support.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                // Step 2: Store info and show manual transfer UI
+                binanceOrderInfo = {
+                    order_id: orderData.order_id,
+                    amount: orderData.amount,
+                    uid: infoData.uid,
+                    account_name: infoData.account_name,
+                    api_key: infoData.api_key,
+                    api_secret: infoData.api_secret,
+                    created_at: Date.now()
+                };
+
+                localStorage.setItem('finorix_pending_binance', JSON.stringify({
+                    order_id: orderData.order_id,
+                    amount: orderData.amount,
+                    created_at: Date.now()
+                }));
+                showBinanceCheckout();
+
+                btn.disabled = false;
+                btnText.textContent = 'PAY — ACTIVATE NOW';
+                spinner.style.display = 'none';
+
+            } catch (err) {
+                console.error('[BinancePay] Error:', err);
+                errorEl.textContent = 'Connection error. Please check your internet and try again.';
+                errorEl.style.display = 'block';
+                btn.disabled = false;
+                btnText.textContent = 'PAY — ACTIVATE NOW';
+                spinner.style.display = 'none';
+            }
+        }
+
+        function showBinanceCheckout() {
+            if (!binanceOrderInfo) return;
+            const existing = document.getElementById('binance-checkout-overlay');
+            if (existing) existing.remove();
+
+            const overlay = document.createElement('div');
+            overlay.id = 'binance-checkout-overlay';
+            overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);backdrop-filter:blur(10px);z-index:10001;display:flex;align-items:center;justify-content:center;overflow-y:auto;padding:20px;';
+            overlay.innerHTML = `
+                <div style="background:linear-gradient(145deg,#1a1a2e,#16213e);border-radius:20px;padding:28px 22px;max-width:400px;width:100%;border:1.5px solid rgba(240,185,11,0.3);box-shadow:0 20px 60px rgba(0,0,0,0.5);max-height:90vh;overflow-y:auto;">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <div style="width:56px;height:56px;border-radius:16px;background:rgba(240,185,11,0.15);display:inline-flex;align-items:center;justify-content:center;margin-bottom:10px;">
+                            <img src="https://cdn.jsdelivr.net/gh/nicehash/Logos@main/Currencies/BNB.svg" style="width:32px;" onerror="this.outerHTML='<i class=\\'fab fa-bitcoin\\' style=\\'font-size:28px;color:#f0b90b;\\'></i>'">
+                        </div>
+                        <h3 style="color:white;font-size:18px;font-weight:800;margin:4px 0;">Binance Pay</h3>
+                        <p style="color:rgba(255,255,255,0.5);font-size:12px;">Send USDT to the Pay ID below</p>
+                    </div>
+
+                    <!-- Pay ID -->
+                    <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:14px;margin-bottom:14px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <span style="color:rgba(255,255,255,0.5);font-size:12px;">Binance Pay ID</span>
+                            <button onclick="copyText('${binanceOrderInfo.uid}')" style="background:rgba(240,185,11,0.15);border:1px solid rgba(240,185,11,0.3);border-radius:8px;color:#f0b90b;padding:4px 10px;font-size:11px;cursor:pointer;font-weight:600;">
+                                <i class="fas fa-copy" style="margin-right:4px;"></i> Copy
+                            </button>
+                        </div>
+                        <p style="color:white;font-size:22px;font-weight:800;letter-spacing:1.5px;margin:0;">${binanceOrderInfo.uid}</p>
+                        <p style="color:rgba(255,255,255,0.4);font-size:12px;margin:4px 0 0;">${binanceOrderInfo.account_name || ''}</p>
+                    </div>
+
+                    <!-- Amount -->
+                    <div style="background:rgba(240,185,11,0.08);border:1px solid rgba(240,185,11,0.2);border-radius:14px;padding:16px;text-align:center;margin-bottom:18px;">
+                        <p style="color:rgba(255,255,255,0.5);font-size:11px;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:4px;">Payment Amount</p>
+                        <p style="font-size:32px;font-weight:900;color:#f0b90b;margin:0;">${binanceOrderInfo.amount} <span style="font-size:16px;color:rgba(255,255,255,0.5);">USDT</span></p>
+                        <button onclick="copyText('${binanceOrderInfo.amount}')" style="background:rgba(240,185,11,0.15);border:1px solid rgba(240,185,11,0.3);border-radius:8px;color:#f0b90b;padding:6px 16px;font-size:12px;cursor:pointer;font-weight:600;margin-top:8px;">
+                            <i class="fas fa-copy" style="margin-right:4px;"></i> Copy Amount
+                        </button>
+                    </div>
+
+                    <!-- Steps -->
+                    <div style="background:rgba(0,230,118,0.06);border:1px solid rgba(0,230,118,0.15);border-radius:12px;padding:14px;margin-bottom:18px;">
+                        <p style="color:var(--green);font-weight:700;font-size:13px;margin-bottom:10px;"><i class="fas fa-list-ol" style="margin-right:6px;"></i> How to Pay:</p>
+                        <div style="color:rgba(255,255,255,0.7);font-size:12px;line-height:2;">
+                            <p><span style="color:#f0b90b;font-weight:700;">①</span> Binance App → Pay → Send</p>
+                            <p><span style="color:#f0b90b;font-weight:700;">②</span> Pay ID: <strong style="color:white;">${binanceOrderInfo.uid}</strong></p>
+                            <p><span style="color:#f0b90b;font-weight:700;">③</span> Amount: <strong style="color:#f0b90b;">${binanceOrderInfo.amount} USDT</strong></p>
+                            <p><span style="color:var(--green);font-weight:700;">④</span> Confirm & Send Payment</p>
+                            <p><span style="color:var(--green);font-weight:700;">⑤</span> Enter Order ID below to verify</p>
+                        </div>
+                    </div>
+
+                    <!-- Order ID Input -->
+                    <div style="background:rgba(255,20,147,0.06);border:1.5px solid rgba(255,20,147,0.25);border-radius:12px;padding:16px;margin-bottom:14px;">
+                        <p style="color:var(--pink);font-size:12px;font-weight:700;margin-bottom:10px;"><i class="fas fa-receipt" style="margin-right:6px;"></i> Enter Order ID after payment</p>
+                        <input type="text" id="binance-order-id-input" placeholder="Enter Binance Order ID..."
+                            style="width:100%;padding:12px 14px;border-radius:10px;border:1.5px solid rgba(240,185,11,0.3);background:rgba(0,0,0,0.3);color:white;font-size:15px;font-weight:600;font-family:monospace;outline:none;box-sizing:border-box;transition:border-color 0.3s;"
+                            onfocus="this.style.borderColor='#f0b90b'" onblur="this.style.borderColor='rgba(240,185,11,0.3)'">
+                        <p style="color:rgba(255,255,255,0.35);font-size:11px;margin:8px 0 0;">Binance App → Pay → History → Copy the Order ID</p>
+                    </div>
+
+                    <p id="binance-verify-status" style="color:rgba(255,255,255,0.4);font-size:12px;text-align:center;margin-bottom:10px;display:none;"></p>
+
+                    <button id="binance-verify-btn" onclick="verifyBinancePayment()"
+                        style="width:100%;padding:14px;border-radius:12px;border:none;background:linear-gradient(135deg,#f0b90b,#d4a200);color:#000;font-size:15px;font-weight:800;cursor:pointer;margin-bottom:10px;transition:opacity 0.3s;">
+                        <i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment
+                    </button>
+
+                    <button onclick="closeBinanceCheckout()" style="width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:10px;color:rgba(255,255,255,0.5);font-size:13px;cursor:pointer;padding:10px 24px;">Cancel</button>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+
+        function closeBinanceCheckout() {
+            const el = document.getElementById('binance-checkout-overlay');
+            if (el) el.remove();
+            if (binancePollInterval) { clearInterval(binancePollInterval); binancePollInterval = null; }
+        }
+
+        function copyText(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showPopup('Copied!', text, '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+            }).catch(() => {
+                // Fallback
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                showPopup('Copied!', text, '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+            });
+        }
+
+        async function verifyBinancePayment() {
+            if (!binanceOrderInfo) return;
+            const input = document.getElementById('binance-order-id-input');
+            const statusEl = document.getElementById('binance-verify-status');
+            const btn = document.getElementById('binance-verify-btn');
+            const userOrderId = (input ? input.value : '').trim();
+
+            if (!userOrderId) {
+                statusEl.style.display = 'block';
+                statusEl.innerHTML = '<i class="fas fa-exclamation-circle" style="color:#ff5555;margin-right:4px;"></i> Please enter your Order ID!';
+                if (input) { input.style.borderColor = '#ff5555'; input.focus(); }
+                return;
+            }
+
+            // Show loading
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:6px;"></i> Checking...';
+            statusEl.style.display = 'block';
+            statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i> Checking Order ID...';
+
+            try {
+                // Step 1: Check if this Order ID was already used (server-side check FIRST)
+                let checkPassed = false;
+                try {
+                    const checkRes = await fetch(`${AUTH_API_BASE}/api/auth/check-binance-order`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ binance_order_id: userOrderId })
+                    });
+                    const checkData = await checkRes.json();
+                    if (checkData.used === true) {
+                        statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> ' + (checkData.message || 'This Order ID has already been used.');
+                        if (input) input.style.borderColor = '#ff5555';
+                        btn.disabled = false;
+                        btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment';
+                        return;
+                    }
+                    if (checkData.used === false) {
+                        checkPassed = true;
+                    }
+                } catch(checkErr) {
+                    console.error('[BinancePay] Pre-check error:', checkErr);
+                }
+
+                if (!checkPassed) {
+                    statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#ffa726;margin-right:4px;"></i> Server verification failed. Please try again.';
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment';
+                    return;
+                }
+
+                // Step 2: Check Binance API for the transaction
+                statusEl.innerHTML = '<i class="fas fa-spinner fa-spin" style="margin-right:4px;"></i> Verifying with Binance...';
+                const res = await fetch(BINANCEPAY_PROXY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'check-transactions',
+                        api_key: binanceOrderInfo.api_key,
+                        api_secret: binanceOrderInfo.api_secret,
+                        startTimestamp: (binanceOrderInfo.created_at || Date.now()) - 86400000 // last 24 hours
+                    })
+                });
+                const data = await res.json();
+                console.log('[BinancePay] Verify:', JSON.stringify(data).substring(0, 500));
+
+                if (data.data && Array.isArray(data.data)) {
+                    const expectedAmount = parseFloat(binanceOrderInfo.amount);
+                    const MIN_AMOUNT = 2; // $2 minimum to activate
+
+                    // Match by user-provided Order ID against orderId or transactionId (USDT only)
+                    const match = data.data.find(tx => {
+                        const txOrderId = (tx.orderId || '').toString();
+                        const txTransId = (tx.transactionId || '').toString();
+                        if (txOrderId === userOrderId || txTransId === userOrderId) {
+                            const txCurrency = (tx.currency || '').toUpperCase();
+                            return txCurrency === 'USDT';
+                        }
+                        return false;
+                    });
+
+                    if (match) {
+                        const paidAmount = parseFloat(match.amount || 0);
+
+                        if (paidAmount < MIN_AMOUNT) {
+                            // Paid less than $2 — reject
+                            const needed = (MIN_AMOUNT - paidAmount).toFixed(2);
+                            statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> You paid only $' + paidAmount.toFixed(2) + '. Minimum $' + MIN_AMOUNT + ' required. Please pay $' + needed + ' more.';
+                            if (input) input.style.borderColor = '#ff5555';
+                        } else {
+                            // Paid $2 or more — activate
+                            statusEl.innerHTML = '<i class="fas fa-check-circle" style="color:var(--green);margin-right:4px;"></i> Payment found! Activating...';
+
+                            // Activate on server (server checks for duplicate binance_order_id)
+                            const activateRes = await fetch(`${AUTH_API_BASE}/api/auth/activate-binance-payment`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    order_id: binanceOrderInfo.order_id,
+                                    email: localStorage.getItem('finorix_auth_email'),
+                                    prepay_id: match.transactionId || match.orderId || '',
+                                    binance_order_id: userOrderId
+                                })
+                            });
+                            const activateData = await activateRes.json();
+
+                            if (!activateData.success) {
+                                statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> ' + (activateData.message || 'Activation failed.');
+                                if (input) input.style.borderColor = '#ff5555';
+                            } else {
+                                const extra = paidAmount - expectedAmount;
+                                let successMsg = 'Your Binance Pay payment is confirmed! Subscription activated.';
+                                if (extra > 0.01) {
+                                    successMsg = 'Payment confirmed! You paid an extra $' + extra.toFixed(2) + '. Subscription activated.';
+                                } else if (paidAmount < expectedAmount - 0.01) {
+                                    successMsg = 'Payment confirmed! You paid $' + paidAmount.toFixed(2) + ' (instead of $' + expectedAmount.toFixed(2) + '). Subscription activated.';
+                                }
+
+                                localStorage.removeItem('finorix_pending_binance');
+                                localStorage.setItem('finorix_auth_status', 'active');
+                                closeBinanceCheckout();
+                                showPopup('Payment Successful!', successMsg, '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                                setTimeout(() => checkStatus(), 2000);
+                                return;
+                            }
+                        }
+                    } else {
+                        statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> No USDT payment found with this Order ID.';
+                        if (input) input.style.borderColor = '#ff5555';
+                    }
+                } else if (data.code && data.code !== '000000') {
+                    console.error('[BinancePay] API error:', data.code, data.msg);
+                    statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#ffa726;margin-right:4px;"></i> API Error: ' + (data.msg || 'Unknown error');
+                } else {
+                    statusEl.innerHTML = '<i class="fas fa-times-circle" style="color:#ff5555;margin-right:4px;"></i> No transactions found.';
+                }
+            } catch (e) {
+                console.error('[BinancePay] Verify error:', e);
+                statusEl.innerHTML = '<i class="fas fa-exclamation-triangle" style="color:#ffa726;margin-right:4px;"></i> Connection error. Please try again.';
+            }
+
+            // Re-enable button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-search" style="margin-right:6px;"></i> Verify Payment';
+        }
+
+        // ===== RUPANTORPAY BDT PAYMENT =====
+        let bdtOrderInfo = null;
+        let bdtPollInterval = null;
+
+        async function createBDTPayment() {
+            const btn = document.getElementById('pay-now-btn');
+            const btnText = document.getElementById('pay-btn-text');
+            const spinner = document.getElementById('pay-spinner');
+            const errorEl = document.getElementById('pay-error');
+            const email = localStorage.getItem('finorix_auth_email');
+
+            if (!email) {
+                showPopup('Session Expired', 'Please login again.');
+                setTimeout(() => logout(), 2000);
+                return;
+            }
+
+            errorEl.style.display = 'none';
+            btn.disabled = true;
+            btnText.textContent = 'Creating BDT payment...';
+            spinner.style.display = 'inline-block';
+
+            try {
+                // Step 1: Create order record on server
+                const orderRes = await fetch(`${AUTH_API_BASE}/api/auth/create-bdt-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const orderData = await orderRes.json();
+
+                if (!orderData.success) {
+                    errorEl.textContent = orderData.message || 'Failed to create order.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                // Step 2: Create RupantorPay checkout via Vercel proxy
+                const rpRes = await fetch(RUPANTORPAY_PROXY, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'checkout',
+                        api_key: orderData.api_key,
+                        amount: orderData.amount_bdt,
+                        email: email,
+                        fullname: email.split('@')[0],
+                        metadata: { order_id: orderData.order_id },
+                        success_url: window.location.origin + '/subscription?payment=bdt-checking&order_id=' + orderData.order_id,
+                        cancel_url: window.location.origin + '/subscription?payment=cancelled',
+                        webhook_url: ''
+                    })
+                });
+                const rpData = await rpRes.json();
+
+                if (!rpData.status || rpData.status === false || rpData.status === 'error' || !rpData.payment_url) {
+                    console.error('[RupantorPay] Checkout failed:', rpData);
+                    errorEl.textContent = rpData.message || 'Failed to create BDT payment. Please try again.';
+                    errorEl.style.display = 'block';
+                    btn.disabled = false;
+                    btnText.textContent = 'PAY — ACTIVATE NOW';
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                // Step 3: Store payment link on server
+                await fetch(`${AUTH_API_BASE}/api/auth/store-bdt-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        order_id: orderData.order_id,
+                        pay_link: rpData.payment_url,
+                        track_id: rpData.order_id || ''
+                    })
+                });
+
+                bdtOrderInfo = {
+                    order_id: orderData.order_id,
+                    rp_order_id: rpData.order_id || '',
+                    amount_bdt: orderData.amount_bdt,
+                    amount_usd: orderData.amount_usd,
+                    api_key: orderData.api_key,
+                    payment_url: rpData.payment_url
+                };
+
+                localStorage.setItem('finorix_pending_bdt', orderData.order_id);
+
+                // Redirect to RupantorPay checkout
+                window.location.href = rpData.payment_url;
+
+            } catch (err) {
+                console.error('[RupantorPay] Error:', err);
+                errorEl.textContent = 'Connection error. Please check your internet and try again.';
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'PAY — ACTIVATE NOW';
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Check BDT payment after returning from RupantorPay
+        async function checkBDTPaymentReturnDirect(orderId, transactionId) {
+            if (!orderId) orderId = localStorage.getItem('finorix_pending_bdt');
+            if (!orderId) return;
+
+            const email = localStorage.getItem('finorix_auth_email');
+            if (!email) return;
+
+            showPopup('Checking Payment...', 'Verifying your BDT payment...', '<i class="fas fa-spinner fa-spin" style="color:#e91e63;font-size:50px;"></i>');
+
+            try {
+                // Get RupantorPay API key
+                const infoRes = await fetch(`${AUTH_API_BASE}/api/auth/rupantorpay-info`);
+                const infoData = await infoRes.json();
+                const apiKey = infoData.api_key || '';
+
+                if (!apiKey) {
+                    showPopup('Error', 'Could not verify payment. Please contact support.');
+                    return;
+                }
+
+                if (transactionId) {
+                    // Verify with RupantorPay via proxy using transactionId
+                    const verifyRes = await fetch(RUPANTORPAY_PROXY, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'verify',
+                            api_key: apiKey,
+                            transaction_id: transactionId
+                        })
+                    });
+                    const verifyData = await verifyRes.json();
+
+                    if (verifyData.status === 'COMPLETED' || verifyData.status === 'success') {
+                        // Activate on server
+                        await fetch(`${AUTH_API_BASE}/api/auth/activate-bdt-payment`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                order_id: orderId,
+                                email: email,
+                                transaction_id: verifyData.transaction_id || transactionId
+                            })
+                        });
+
+                        localStorage.removeItem('finorix_pending_bdt');
+                        localStorage.setItem('finorix_auth_status', 'active');
+                        showPopup('Payment Successful!', 'Your BDT payment is confirmed! Subscription activated.', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                        setTimeout(() => checkStatus(), 2000);
+                    } else {
+                        startBDTPoll(orderId, apiKey, email, transactionId);
+                        showPopup('Payment Processing', 'Your payment is being verified. Please wait...', '<i class="fas fa-spinner fa-spin" style="color:#e91e63;font-size:50px;"></i>');
+                    }
+                } else {
+                    // No transactionId — poll with what we have
+                    showPopup('Payment Processing', 'Waiting for payment confirmation...', '<i class="fas fa-spinner fa-spin" style="color:#e91e63;font-size:50px;"></i>');
+                    // Can't verify without transactionId, just check server status
+                    startBDTServerPoll(orderId, email);
+                }
+            } catch (e) {
+                console.error('[BDT] Verify error:', e);
+            }
+        }
+
+        function startBDTPoll(orderId, apiKey, email, transactionId) {
+            if (bdtPollInterval) clearInterval(bdtPollInterval);
+            let attempts = 0;
+            bdtPollInterval = setInterval(async () => {
+                attempts++;
+                if (attempts > 60) {
+                    clearInterval(bdtPollInterval);
+                    return;
+                }
+                try {
+                    const verifyRes = await fetch(RUPANTORPAY_PROXY, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ action: 'verify', api_key: apiKey, transaction_id: transactionId })
+                    });
+                    const verifyData = await verifyRes.json();
+
+                    if (verifyData.status === 'COMPLETED' || verifyData.status === 'success') {
+                        clearInterval(bdtPollInterval);
+                        bdtPollInterval = null;
+
+                        await fetch(`${AUTH_API_BASE}/api/auth/activate-bdt-payment`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ order_id: orderId, email: email, transaction_id: verifyData.transaction_id || transactionId })
+                        });
+
+                        localStorage.removeItem('finorix_pending_bdt');
+                        localStorage.setItem('finorix_auth_status', 'active');
+                        showPopup('Payment Successful!', 'Your BDT payment is confirmed! Subscription activated.', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                        setTimeout(() => checkStatus(), 2000);
+                    }
+                } catch (e) {
+                    console.error('[BDT] Poll error:', e);
+                }
+            }, 5000);
+        }
+
+        // Fallback: poll server-side payment status when no transactionId available
+        function startBDTServerPoll(orderId, email) {
+            if (bdtPollInterval) clearInterval(bdtPollInterval);
+            let attempts = 0;
+            bdtPollInterval = setInterval(async () => {
+                attempts++;
+                if (attempts > 60) {
+                    clearInterval(bdtPollInterval);
+                    showPopup('Timeout', 'Payment verification timed out. If you paid, please refresh the page.', '<i class="fas fa-exclamation-circle" style="color:#ffa726;font-size:50px;"></i>');
+                    return;
+                }
+                try {
+                    const res = await fetch(`${AUTH_API_BASE}/api/auth/check-payment`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email })
+                    });
+                    const data = await res.json();
+                    if (data.success && data.user_status === 'active') {
+                        clearInterval(bdtPollInterval);
+                        bdtPollInterval = null;
+                        localStorage.removeItem('finorix_pending_bdt');
+                        localStorage.setItem('finorix_auth_status', 'active');
+                        showPopup('Payment Successful!', 'Your subscription has been activated!', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                        setTimeout(() => checkStatus(), 2000);
+                    }
+                } catch (e) {}
+            }, 5000);
+        }
+
+        // Create Payment (OxaPay Crypto)
+        async function createPayment() {
+            const btn = document.getElementById('pay-now-btn');
+            const btnText = document.getElementById('pay-btn-text');
+            const spinner = document.getElementById('pay-spinner');
+            const errorEl = document.getElementById('pay-error');
+            const email = localStorage.getItem('finorix_auth_email');
+
+            if (!email) {
+                showPopup('Session Expired', 'Please login again.');
+                setTimeout(() => logout(), 2000);
+                return;
+            }
+
+            // Show loading
+            errorEl.style.display = 'none';
+            btn.disabled = true;
+            btnText.textContent = 'Creating payment...';
+            spinner.style.display = 'inline-block';
+
+            try {
+                const returnUrl = window.location.href.split('?')[0];
+                const res = await fetch(`${AUTH_API_BASE}/api/auth/create-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: email,
+                        return_url: returnUrl
+                    })
+                });
+                const data = await res.json();
+
+                if (data.success && data.pay_link) {
+                    // Store payment info for polling
+                    localStorage.setItem('finorix_pending_payment', data.order_id);
+                    // Redirect to payment page
+                    window.location.href = data.pay_link;
+                } else {
+                    errorEl.textContent = data.message || 'Failed to create payment. Please try again.';
+                    errorEl.style.display = 'block';
+                }
+            } catch (err) {
+                errorEl.textContent = 'Connection error. Please check your internet and try again.';
+                errorEl.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                btnText.textContent = 'PAY — ACTIVATE NOW';
+                spinner.style.display = 'none';
+            }
+        }
+
+        // Poll payment status after returning from payment page
+        async function pollPaymentStatus() {
+            const email = localStorage.getItem('finorix_auth_email');
+            const pendingPayment = localStorage.getItem('finorix_pending_payment');
+            if (!email || !pendingPayment) return;
+
+            try {
+                const res = await fetch(`${AUTH_API_BASE}/api/auth/check-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                const data = await res.json();
+
+                if (data.success && data.user_status === 'active') {
+                    localStorage.removeItem('finorix_pending_payment');
+                    localStorage.setItem('finorix_auth_status', 'active');
+                    showPopup(
+                        'Payment Successful!',
+                        'Your subscription has been activated. You now have full access to Finorix Bot trading signals!',
+                        '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>'
+                    );
+                    setTimeout(() => checkStatus(), 2000);
+                } else if (data.payment_status === 'waiting' || data.payment_status === 'confirming') {
+                    // Still processing, poll again in 10 seconds
+                    setTimeout(pollPaymentStatus, 10000);
+                }
+            } catch (e) {
+                // Silent fail, will check again on refresh
+            }
+        }
+
+        // Countdown timer
+        let countdownInterval = null;
+
+        function stopCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function startCountdown(expiryDateStr) {
+            stopCountdown();
+
+            const container = document.getElementById('countdown-container');
+
+            function updateCountdown() {
+                // Parse expiry as BD time (UTC+6)
+                const parts = expiryDateStr.split(/[- :]/);
+                const expiryUTC = Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3] - 6, parts[4], parts[5]);
+                const nowUTC = Date.now();
+                let diff = expiryUTC - nowUTC;
+
+                if (diff <= 0) {
+                    stopCountdown();
+                    container.innerHTML = '<div class="countdown-expired"><i class="fas fa-clock" style="margin-right:6px;"></i> Account Access Expired!</div>';
+                    // Refresh status after short delay
+                    setTimeout(() => checkStatus(), 3000);
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                diff %= (1000 * 60 * 60 * 24);
+                const hours = Math.floor(diff / (1000 * 60 * 60));
+                diff %= (1000 * 60 * 60);
+                const minutes = Math.floor(diff / (1000 * 60));
+                diff %= (1000 * 60);
+                const seconds = Math.floor(diff / 1000);
+
+                // Determine urgency class
+                const totalMs = expiryUTC - nowUTC;
+                let urgencyClass = '';
+                if (totalMs < 60 * 60 * 1000) {
+                    urgencyClass = 'countdown-urgent';
+                } else if (totalMs < 24 * 60 * 60 * 1000) {
+                    urgencyClass = 'countdown-warning';
+                }
+
+                let html = '<div class="countdown-label"><i class="fas fa-hourglass-half" style="margin-right:6px;"></i> Time Remaining</div>';
+                html += `<div class="countdown-timer ${urgencyClass}">`;
+
+                if (days > 0) {
+                    html += `<div class="countdown-unit"><div class="countdown-value">${days}</div><div class="countdown-name">Days</div></div>`;
+                }
+                html += `<div class="countdown-unit"><div class="countdown-value">${String(hours).padStart(2, '0')}</div><div class="countdown-name">Hours</div></div>`;
+                html += `<div class="countdown-unit"><div class="countdown-value">${String(minutes).padStart(2, '0')}</div><div class="countdown-name">Min</div></div>`;
+                html += `<div class="countdown-unit"><div class="countdown-value">${String(seconds).padStart(2, '0')}</div><div class="countdown-name">Sec</div></div>`;
+                html += '</div>';
+
+                container.innerHTML = html;
+            }
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // Init
+        checkStatus();
+
+        // Fetch dynamic price from server
+        async function loadSubscriptionPrice() {
+            try {
+                const res = await fetch(`${AUTH_API_BASE}/api/admin/price`);
+                const data = await res.json();
+                if (data.success) {
+                    const p = parseFloat(data.price).toFixed(2);
+                    cachedPriceUSD = parseFloat(data.price);
+                    const priceEl = document.getElementById('price-display');
+                    if (priceEl) priceEl.innerHTML = '$' + p + ' <span style="font-size:18px;color:rgba(255,255,255,0.5);font-weight:600;">USD</span>';
+                    const btnText = document.getElementById('pay-btn-text');
+                    if (btnText && btnText.textContent.includes('PAY')) btnText.textContent = 'PAY $' + p + ' — ACTIVATE NOW';
+                }
+            } catch (e) {}
+        }
+        loadSubscriptionPrice();
+
+        // Check for pending payment on page load
+        if (localStorage.getItem('finorix_pending_payment')) {
+            pollPaymentStatus();
+        }
+
+        // Handle return from payment page (OxaPay + Binance Pay + RupantorPay)
+        (function handlePaymentReturn() {
+            const params = new URLSearchParams(window.location.search);
+            const paymentResult = params.get('payment');
+            if (paymentResult) {
+                // Capture RupantorPay params BEFORE cleaning URL
+                const rpTransactionId = params.get('transactionId') || '';
+                const rpOrderId = params.get('order_id') || localStorage.getItem('finorix_pending_bdt') || '';
+
+                // Clean URL without reload
+                history.replaceState(null, '', window.location.pathname);
+
+                if (paymentResult === 'binance-checking') {
+                    // Returned from Binance Pay — show checkout overlay to enter Order ID
+                    const pendingRaw = localStorage.getItem('finorix_pending_binance');
+                    if (pendingRaw) {
+                        let pendingData;
+                        try { pendingData = JSON.parse(pendingRaw); } catch(e) {
+                            pendingData = { order_id: pendingRaw, amount: null, created_at: Date.now() - 300000 };
+                        }
+                        (async () => {
+                            try {
+                                const infoRes = await fetch(`${AUTH_API_BASE}/api/auth/binance-info`);
+                                const infoData = await infoRes.json();
+                                binanceOrderInfo = {
+                                    order_id: pendingData.order_id,
+                                    amount: pendingData.amount || cachedPriceUSD || '0',
+                                    api_key: infoData.api_key,
+                                    api_secret: infoData.api_secret,
+                                    uid: infoData.uid,
+                                    account_name: infoData.account_name,
+                                    created_at: pendingData.created_at || (Date.now() - 300000)
+                                };
+                                showBinanceCheckout();
+                            } catch(e) { console.error(e); }
+                        })();
+                    }
+                } else if (paymentResult === 'bdt-checking') {
+                    // Returned from RupantorPay — verify BDT payment
+                    const bdtOrderId = rpOrderId;
+                    checkBDTPaymentReturnDirect(bdtOrderId, rpTransactionId);
+                } else if (paymentResult === 'success') {
+                    localStorage.removeItem('finorix_pending_payment');
+                    localStorage.removeItem('finorix_pending_binance');
+                    localStorage.removeItem('finorix_pending_bdt');
+                    localStorage.setItem('finorix_auth_status', 'active');
+                    showPopup('Payment Successful!', 'Your subscription has been activated. Enjoy Finorix Pro!', '<i class="fas fa-check-circle" style="color:var(--green);font-size:50px;"></i>');
+                    setTimeout(() => checkStatus(), 500);
+                } else if (paymentResult === 'pending') {
+                    showPopup('Payment Pending', 'Your payment is being processed. Please wait a few minutes and refresh.', '<i class="fas fa-hourglass-half" style="color:#ffa726;font-size:50px;"></i>');
+                    setTimeout(() => pollPaymentStatus(), 5000);
+                } else if (paymentResult === 'cancelled') {
+                    showPopup('Payment Cancelled', 'Your payment was cancelled. You can try again anytime.', '<i class="fas fa-times-circle" style="color:#ff5555;font-size:50px;"></i>');
+                    localStorage.removeItem('finorix_pending_binance');
+                    localStorage.removeItem('finorix_pending_bdt');
+                } else {
+                    showPopup('Payment Issue', 'There was an issue verifying your payment. Please contact support or try again.');
+                }
+            }
+        })();
+
+        // ===== PWA INSTALL =====
+
+        // Register service worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/service-worker.js').catch(() => {});
+        }
+
+        // Capture the install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById('install-app-section').style.display = 'block';
+        });
+
+        // Check if already installed as PWA
+        window.addEventListener('appinstalled', () => {
+            deferredPrompt = null;
+            document.getElementById('install-app-section').style.display = 'none';
+        });
+
+        // Show install button for iOS (no beforeinstallprompt support)
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        }
+        function isInStandaloneMode() {
+            return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        }
+
+        // Show button on iOS if not already installed
+        if (isIOS() && !isInStandaloneMode()) {
+            document.getElementById('install-app-section').style.display = 'block';
+        }
+
+        // Also show for Android browsers that support PWA but haven't triggered prompt yet
+        if (!isInStandaloneMode() && /Android/i.test(navigator.userAgent)) {
+            setTimeout(() => {
+                if (!deferredPrompt) {
+                    document.getElementById('install-app-section').style.display = 'block';
+                }
+            }, 2000);
+        }
+
+        function installApp() {
+            if (deferredPrompt) {
+                // Chrome/Edge/Samsung Browser - native install prompt
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((result) => {
+                    if (result.outcome === 'accepted') {
+                        document.getElementById('install-app-section').style.display = 'none';
+                    }
+                    deferredPrompt = null;
+                });
+            } else if (isIOS()) {
+                // iOS - show manual guide
+                document.getElementById('ios-install-guide').style.display = 'block';
+            } else {
+                // Fallback - show generic guide
+                showPopup('Install App', 
+                    '<div style="text-align:left;line-height:1.8;font-size:13px;">' +
+                    '<p><strong style="color:var(--pink);">Chrome/Edge:</strong> Tap the <b>3-dot menu</b> (top right) and select <b>"Install App"</b> or <b>"Add to Home Screen"</b></p>' +
+                    '<p><strong style="color:var(--pink);">Samsung Browser:</strong> Tap the <b>menu</b> and select <b>"Add page to"</b> > <b>"Home Screen"</b></p>' +
+                    '</div>'
+                );
+            }
+        }
+    </script>
+    <script src="/protect.js"></script>
+</body>
+</html>
