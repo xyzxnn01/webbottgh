@@ -550,6 +550,105 @@
             50% { transform: translateY(-5px); }
         }
 
+        /* Analyzing Animation */
+        .analyzing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 0;
+            gap: 8px;
+        }
+        .analyzing-candles {
+            display: flex;
+            gap: 6px;
+            align-items: flex-end;
+        }
+        .analyzing-candle {
+            width: 8px;
+            border-radius: 2px;
+            animation: analyzeCandle 0.6s ease-in-out infinite;
+        }
+        .analyzing-candle:nth-child(1) { height: 18px; background: #00ff66; animation-delay: 0s; }
+        .analyzing-candle:nth-child(2) { height: 26px; background: #ff3333; animation-delay: 0.1s; }
+        .analyzing-candle:nth-child(3) { height: 14px; background: #00ff66; animation-delay: 0.2s; }
+        .analyzing-candle:nth-child(4) { height: 30px; background: #ff3333; animation-delay: 0.3s; }
+        .analyzing-candle:nth-child(5) { height: 20px; background: #00ff66; animation-delay: 0.4s; }
+        @keyframes analyzeCandle {
+            0%, 100% { transform: scaleY(1); opacity: 0.6; }
+            50% { transform: scaleY(1.5); opacity: 1; }
+        }
+        .analyzing-text {
+            color: #00ffff;
+            font-size: 0.85em;
+            font-weight: 700;
+            letter-spacing: 1px;
+            animation: analyzePulse 1s ease-in-out infinite;
+        }
+        @keyframes analyzePulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+
+        /* WIN/LOSS Result */
+        .result-win {
+            color: #00ff66;
+            font-size: 1.1em;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(0,255,100,0.8);
+            text-align: center;
+            padding: 8px 0;
+            animation: resultFlash 0.5s ease-out;
+        }
+        .result-loss {
+            color: #ff3333;
+            font-size: 1.1em;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255,50,50,0.8);
+            text-align: center;
+            padding: 8px 0;
+            animation: resultFlash 0.5s ease-out;
+        }
+        .result-draw {
+            color: #ffeb3b;
+            font-size: 1.1em;
+            font-weight: 900;
+            text-shadow: 0 0 15px rgba(255,235,59,0.8);
+            text-align: center;
+            padding: 8px 0;
+            animation: resultFlash 0.5s ease-out;
+        }
+        @keyframes resultFlash {
+            0% { transform: scale(0.5); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* Market Closed */
+        .market-closed-box {
+            text-align: center;
+            padding: 8px 0;
+        }
+        .market-closed-box .closed-icon {
+            font-size: 1.5em;
+            margin-bottom: 4px;
+        }
+        .market-closed-box .closed-title {
+            color: #ff6b6b;
+            font-size: 0.95em;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+        .market-closed-box .closed-opens {
+            color: rgba(255,255,255,0.5);
+            font-size: 0.75em;
+            margin-top: 4px;
+        }
+        .market-closed-box .closed-opens span {
+            color: #00ffff;
+            font-weight: 700;
+        }
+
         /* TradingView Container */
         .tradingview-container {
             width: 100%;
@@ -648,6 +747,117 @@
 
             .ticket-modal { width: 95%; padding: 25px; }
         }
+
+        /* Signal History Modal */
+        .history-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            z-index: 600;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .history-overlay.show {
+            display: flex;
+        }
+        .history-modal {
+            background: linear-gradient(145deg, #0a0a0a, #1a0a1a);
+            border: 2px solid var(--pink);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 85vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 40px rgba(255,20,147,0.3);
+        }
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 20px;
+            border-bottom: 1px solid rgba(255,20,147,0.2);
+        }
+        .history-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,20,147,0.15);
+        }
+        .stat-box {
+            text-align: center;
+            padding: 10px 4px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+        }
+        .stat-num {
+            display: block;
+            font-size: 22px;
+            font-weight: 900;
+        }
+        .stat-label {
+            display: block;
+            font-size: 10px;
+            color: rgba(255,255,255,0.5);
+            text-transform: uppercase;
+            margin-top: 2px;
+        }
+        .stat-total .stat-num { color: #00bcd4; }
+        .stat-win .stat-num { color: #00ff66; }
+        .stat-loss .stat-num { color: #ff3333; }
+        .stat-rate .stat-num { color: #ffeb3b; }
+        .history-market-label {
+            text-align: center;
+            padding: 8px;
+            font-size: 13px;
+            font-weight: 700;
+            color: #00ffff;
+            letter-spacing: 1px;
+        }
+        .history-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 12px 16px;
+        }
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            margin-bottom: 6px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+        .history-item .hi-time {
+            font-size: 12px;
+            color: rgba(255,255,255,0.5);
+            font-family: monospace;
+        }
+        .history-item .hi-dir {
+            font-weight: 900;
+            font-size: 14px;
+        }
+        .hi-dir.call { color: #00ff66; }
+        .hi-dir.put  { color: #ff3333; }
+        .hi-dir.skip { color: #ffeb3b; }
+        .history-item .hi-str {
+            font-size: 12px;
+            color: rgba(255,255,255,0.6);
+        }
+        .history-item .hi-result {
+            font-weight: 800;
+            font-size: 13px;
+            padding: 3px 10px;
+            border-radius: 6px;
+        }
+        .hi-result.win  { background: rgba(0,255,100,0.15); color: #00ff66; }
+        .hi-result.loss { background: rgba(255,50,50,0.15); color: #ff3333; }
+        .hi-result.draw { background: rgba(255,235,59,0.12); color: #ffeb3b; }
+        .hi-result.pending { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.4); }
 
         /* Support Ticket System */
         .support-header {
@@ -1292,6 +1502,74 @@
             font-size: 12px;
             margin-top: 14px;
         }
+
+        /* Device Kicked Overlay */
+        #device-kicked-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 999999;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(15px);
+        }
+        #device-kicked-overlay.show {
+            display: flex;
+        }
+        .kicked-card {
+            background: linear-gradient(145deg, #0d0d0d, #1a0a14);
+            border: 2px solid #ff3333;
+            border-radius: 20px;
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255, 50, 50, 0.3);
+            animation: kickedSlideIn 0.4s ease-out;
+        }
+        @keyframes kickedSlideIn {
+            from { transform: scale(0.8) translateY(30px); opacity: 0; }
+            to { transform: scale(1) translateY(0); opacity: 1; }
+        }
+        .kicked-card .kicked-icon {
+            width: 70px; height: 70px;
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 32px;
+            box-shadow: 0 0 30px rgba(255, 50, 50, 0.4);
+        }
+        .kicked-card h2 {
+            color: #ff3333;
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 12px;
+        }
+        .kicked-card p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+        .kicked-card .kicked-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #ff3333, #cc0000);
+            color: #fff;
+            padding: 13px 36px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 800;
+            font-size: 14px;
+            cursor: pointer;
+            box-shadow: 0 4px 18px rgba(255, 50, 50, 0.35);
+            transition: transform 0.2s;
+        }
+        .kicked-card .kicked-btn:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -1303,6 +1581,16 @@
         <img src="https://cdn.phototourl.com/uploads/2026-02-12-e062ad97-0b44-4c53-adc2-a1790d109bf2.png" alt="Finorix Pro Logo" class="loading-logo">
         <div class="loading-text">Finorix Pro</div>
         <div class="loading-spinner"></div>
+    </div>
+
+    <!-- Device Kicked Overlay -->
+    <div id="device-kicked-overlay">
+        <div class="kicked-card">
+            <div class="kicked-icon">📱</div>
+            <h2>Logged In On Another Device</h2>
+            <p>Your account has been logged in from another device. Only one device can be active at a time.</p>
+            <button class="kicked-btn" onclick="window.location.href='login'">GO TO LOGIN</button>
+        </div>
     </div>
 
     <!-- Balance Check Overlay -->
@@ -1629,13 +1917,13 @@
                     // Kicked from another device
                     if (result.status === 'logged_out') {
                         clearInterval(statusMonitorInterval);
+                        if (countdownInterval) clearInterval(countdownInterval);
                         localStorage.removeItem('finorix_auth_token');
                         localStorage.removeItem('finorix_auth_email');
                         localStorage.removeItem('finorix_auth_status');
                         localStorage.removeItem('finorix_login_time');
                         localStorage.removeItem('finorix_session_token');
-                        alert(result.message || 'Your account has been logged in from another device.');
-                        window.location.href = 'login';
+                        document.getElementById('device-kicked-overlay').classList.add('show');
                         return;
                     }
 
@@ -1742,6 +2030,9 @@
         let prefetchedSignal = null;    // Pre-fetched signal for next candle
         let prefetchedMinuteKey = '';   // Key for pre-fetched signal
         let countdownInterval = null;   // Countdown timer interval
+        let isTransitioning = false;    // True during candle transition animation
+        let lastClosedSignal = null;    // Previous candle's signal for WIN/LOSS check
+        let lastEntryPrice = null;      // Entry price of previous signal
 
         function getCurrentMinuteKey(market) {
             const now = new Date();
@@ -1818,7 +2109,8 @@
                     direction: data.direction,
                     accuracy: data.strength,
                     time: current.time,
-                    timeframe: '1 Minute'
+                    timeframe: '1 Minute',
+                    entryPrice: data.entry_price || null
                 };
                 lockedMinuteKey = current.key;
                 displayLockedSignal();
@@ -1852,21 +2144,173 @@
             }
         }
 
+        // ===== MARKET HOURS DETECTION =====
+        function getMarketType(market) {
+            if (['BTCUSDT', 'ETHUSDT'].includes(market)) return 'crypto';
+            if (['US30', 'US500'].includes(market)) return 'index';
+            if (['USOIL'].includes(market)) return 'commodity';
+            if (['XAUUSD', 'XAGUSD'].includes(market)) return 'metal';
+            return 'forex';
+        }
+
+        function isMarketOpen(market) {
+            const type = getMarketType(market);
+            if (type === 'crypto') return { open: true }; // 24/7
+
+            const now = new Date();
+            // Convert to UTC
+            const utcDay = now.getUTCDay(); // 0=Sun, 6=Sat
+            const utcHour = now.getUTCHours();
+            const utcMin = now.getUTCMinutes();
+            const utcTimeDecimal = utcHour + utcMin / 60;
+
+            // Forex: Sun 22:00 UTC to Fri 22:00 UTC
+            // Closed: Fri 22:00 UTC → Sun 22:00 UTC
+            let closed = false;
+            if (utcDay === 6) closed = true; // All Saturday
+            if (utcDay === 5 && utcTimeDecimal >= 22) closed = true; // Friday after 22:00
+            if (utcDay === 0 && utcTimeDecimal < 22) closed = true; // Sunday before 22:00
+
+            if (type === 'index') {
+                // US indices: Mon-Fri ~14:30–21:00 UTC (with pre/post extended)
+                // Simplified: closed Sat/Sun + outside 13:00-21:30 UTC
+                if (utcDay === 0 || utcDay === 6) closed = true;
+                else if (utcTimeDecimal < 13 || utcTimeDecimal >= 21.5) closed = true;
+                else closed = false;
+            }
+
+            if (!closed) return { open: true };
+
+            // Calculate next open time
+            let nextOpen = new Date(now);
+            if (type === 'index') {
+                // Next weekday at 13:00 UTC
+                do {
+                    nextOpen.setUTCDate(nextOpen.getUTCDate() + 1);
+                } while (nextOpen.getUTCDay() === 0 || nextOpen.getUTCDay() === 6);
+                nextOpen.setUTCHours(13, 0, 0, 0);
+            } else {
+                // Forex: next Sunday at 22:00 UTC
+                while (nextOpen.getUTCDay() !== 0) {
+                    nextOpen.setUTCDate(nextOpen.getUTCDate() + 1);
+                }
+                nextOpen.setUTCHours(22, 0, 0, 0);
+                // If we're already past Sunday 22 UTC, it should be open
+            }
+
+            // Format next open in user's timezone
+            const tzOffset = getSelectedTimezoneOffsetMinutes();
+            const localOpen = new Date(nextOpen.getTime() + (tzOffset * 60000) - (nextOpen.getTimezoneOffset() * 60000));
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            const dateStr = `${localOpen.getDate()} ${months[localOpen.getMonth()]}`;
+            const timeStr = `${String(localOpen.getHours()).padStart(2,'0')}:${String(localOpen.getMinutes()).padStart(2,'0')}`;
+
+            return { open: false, nextOpenDate: dateStr, nextOpenTime: timeStr };
+        }
+
+        function showMarketClosedHTML(info) {
+            return `<div class="market-closed-box">
+                <div class="closed-icon">🔒</div>
+                <div class="closed-title">MARKET CLOSED</div>
+                <div class="closed-opens">Opens <span>${info.nextOpenDate}</span> at <span>${info.nextOpenTime}</span></div>
+            </div>`;
+        }
+
+        // ===== TRANSITION: WIN/LOSS + Analyzing Animation =====
+        function showAnalyzingAnimation() {
+            const el = document.getElementById('formattedSignal');
+            if (!el) return;
+            el.innerHTML = `<div class="analyzing-container">
+                <div class="analyzing-candles">
+                    <div class="analyzing-candle"></div>
+                    <div class="analyzing-candle"></div>
+                    <div class="analyzing-candle"></div>
+                    <div class="analyzing-candle"></div>
+                    <div class="analyzing-candle"></div>
+                </div>
+                <div class="analyzing-text">ANALYZING...</div>
+            </div>`;
+        }
+
+        function showResultHTML(result) {
+            const el = document.getElementById('formattedSignal');
+            if (!el) return;
+            const cls = result === 'WIN' ? 'result-win' : result === 'LOSS' ? 'result-loss' : 'result-draw';
+            const icon = result === 'WIN' ? '✅' : result === 'LOSS' ? '❌' : '➖';
+            el.innerHTML = `<div class="${cls}">${icon} ${result}</div>`;
+        }
+
+        async function handleCandleTransition() {
+            if (isTransitioning) return;
+            isTransitioning = true;
+
+            // Step 1: Determine WIN/LOSS from previous signal
+            if (lastClosedSignal && lastClosedSignal.direction !== 'SKIP' && lastEntryPrice != null) {
+                try {
+                    const data = await fetchAnalysis(selectedMarket);
+                    const closePrice = data.entry_price; // Current price = close of last candle
+                    let result = 'DRAW';
+                    if (closePrice != null && lastEntryPrice != null) {
+                        if (lastClosedSignal.direction === 'CALL') {
+                            result = closePrice > lastEntryPrice ? 'WIN' : closePrice < lastEntryPrice ? 'LOSS' : 'DRAW';
+                        } else if (lastClosedSignal.direction === 'PUT') {
+                            result = closePrice < lastEntryPrice ? 'WIN' : closePrice > lastEntryPrice ? 'LOSS' : 'DRAW';
+                        }
+                    }
+                    // Show result for 1 second
+                    showResultHTML(result);
+                    await new Promise(r => setTimeout(r, 1000));
+                } catch(e) {
+                    // Skip result display on error
+                }
+            }
+
+            // Step 2: Show analyzing animation for ~1.5 seconds
+            showAnalyzingAnimation();
+            await new Promise(r => setTimeout(r, 1500));
+
+            // Step 3: Save current signal as last before locking new one
+            lastClosedSignal = lockedSignal;
+            lastEntryPrice = lockedSignal ? lockedSignal.entryPrice : null;
+
+            // Step 4: Lock new signal
+            await lockSignalForCurrentCandle();
+            isTransitioning = false;
+        }
+
         // Main signal tick — called every second
         function signalTick() {
             const current = getCurrentMinuteKey(selectedMarket);
             const now = new Date();
             const secondsLeft = 59 - now.getSeconds();
 
-            // New candle started? Lock new signal
-            if (current.key !== lockedMinuteKey) {
-                lockSignalForCurrentCandle();
+            // Check market hours
+            const marketStatus = isMarketOpen(selectedMarket);
+            if (!marketStatus.open) {
+                const el = document.getElementById('formattedSignal');
+                if (el && !el.querySelector('.market-closed-box')) {
+                    el.innerHTML = showMarketClosedHTML(marketStatus);
+                }
+                lockedMinuteKey = ''; // Reset so signal resumes when market opens
+                return;
             }
 
-            // Update countdown display
-            const countdownEl = document.getElementById('signal-countdown');
-            if (countdownEl) {
-                countdownEl.textContent = `00:${String(secondsLeft).padStart(2, '0')}`;
+            // New candle started? Show transition then lock new signal
+            if (current.key !== lockedMinuteKey && !isTransitioning) {
+                if (lockedMinuteKey === '') {
+                    // First load — no transition, just lock immediately
+                    lockSignalForCurrentCandle();
+                } else {
+                    handleCandleTransition();
+                }
+            }
+
+            // Update countdown display (only if not transitioning)
+            if (!isTransitioning) {
+                const countdownEl = document.getElementById('signal-countdown');
+                if (countdownEl) {
+                    countdownEl.textContent = `00:${String(secondsLeft).padStart(2, '0')}`;
+                }
             }
 
             // Pre-fetch at 5 seconds remaining
@@ -1882,7 +2326,7 @@
             const candleClass = isSkip ? 'candle-neutral' : (isCall ? 'candle-green' : 'candle-red');
             const directionClass = isSkip ? 'signal-skip' : (isCall ? 'signal-call' : 'signal-put');
             const directionColor = isSkip ? '#ffeb3b' : (isCall ? '#00ff00' : '#ff0000');
-            const directionLabel = isSkip ? 'WAIT' : signal.direction;
+            const directionLabel = isSkip ? 'NO ANALYSIS' : signal.direction;
             const accuracyDisplay = isSkip ? '—' : signal.accuracy;
             const now = new Date();
             const secondsLeft = 59 - now.getSeconds();
@@ -1967,6 +2411,7 @@
         // Change market — reset lock and fetch fresh signal
         function changeMarket(market) {
             selectedMarket = market;
+            localStorage.setItem('finorix_selected_market', market);
             const symbol = SYMBOLS[market] || 'FX:EURUSD';
             
             // Update UI
@@ -1984,7 +2429,18 @@
             lockedMinuteKey = '';
             prefetchedSignal = null;
             prefetchedMinuteKey = '';
-            lockSignalForCurrentCandle();
+            isTransitioning = false;
+            lastClosedSignal = null;
+            lastEntryPrice = null;
+
+            // Check market hours before fetching
+            const mStatus = isMarketOpen(market);
+            if (!mStatus.open) {
+                const el = document.getElementById('formattedSignal');
+                if (el) el.innerHTML = showMarketClosedHTML(mStatus);
+            } else {
+                lockSignalForCurrentCandle();
+            }
             loadTradingView(symbol);
         }
 
@@ -1998,8 +2454,83 @@
             countdownInterval = setInterval(signalTick, 1000);
         }
 
+        // ====== Signal History Functions ======
+        // const HISTORY_API = 'https://finorixpro.pythonanywhere.com'; // Production
+        const HISTORY_API = 'http://192.168.5.104:5000'; // Local
+
+        function openSignalHistory() {
+            document.getElementById('historyOverlay').classList.add('show');
+            document.getElementById('historyMarketLabel').textContent = selectedMarket;
+            loadSignalHistory();
+        }
+
+        function closeSignalHistory() {
+            document.getElementById('historyOverlay').classList.remove('show');
+        }
+
+        async function loadSignalHistory() {
+            const listEl = document.getElementById('historyList');
+            listEl.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:30px;">Loading...</div>';
+
+            try {
+                const resp = await fetch(`${HISTORY_API}/api/signal-history/list?market=${encodeURIComponent(selectedMarket)}`);
+                const data = await resp.json();
+
+                if (!data.success) {
+                    listEl.innerHTML = '<div style="text-align:center;color:#ff3333;padding:30px;">Failed to load history</div>';
+                    return;
+                }
+
+                // Update stats
+                document.getElementById('statTotal').textContent = data.stats.total;
+                document.getElementById('statWins').textContent = data.stats.wins;
+                document.getElementById('statLosses').textContent = data.stats.losses;
+                document.getElementById('statRate').textContent = data.stats.total > 0 ? data.stats.win_rate + '%' : '—';
+                document.getElementById('historyMarketLabel').textContent = selectedMarket;
+
+                if (!data.signals || data.signals.length === 0) {
+                    listEl.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.4);padding:30px;">No signals yet for this market</div>';
+                    return;
+                }
+
+                let html = '';
+                for (const s of data.signals) {
+                    const dirClass = s.direction === 'CALL' ? 'call' : s.direction === 'PUT' ? 'put' : 'skip';
+                    const resClass = s.result === 'WIN' ? 'win' : s.result === 'LOSS' ? 'loss' : s.result === 'DRAW' ? 'draw' : 'pending';
+                    const resLabel = s.result || 'PENDING';
+                    // Extract time from minute_key (format: YYYY-MM-DDTHH:MM)
+                    const timeStr = s.minute_key ? s.minute_key.slice(11, 16) : '--:--';
+                    const entryStr = s.entry_price != null ? Number(s.entry_price).toFixed(5) : '--';
+                    const exitStr = s.exit_price != null ? Number(s.exit_price).toFixed(5) : '--';
+
+                    html += `<div class="history-item">
+                        <div>
+                            <div class="hi-time">${timeStr} UTC</div>
+                            <div class="hi-dir ${dirClass}">${s.direction} <span class="hi-str">${s.strength || ''}</span></div>
+                            <div style="font-size:11px;color:rgba(255,255,255,0.35);">${entryStr} → ${exitStr}</div>
+                        </div>
+                        <div class="hi-result ${resClass}">${resLabel}</div>
+                    </div>`;
+                }
+                listEl.innerHTML = html;
+            } catch(e) {
+                listEl.innerHTML = '<div style="text-align:center;color:#ff3333;padding:30px;">Connection error</div>';
+            }
+        }
+
         // Market button event listeners
         document.addEventListener('DOMContentLoaded', function() {
+            // Restore saved market from localStorage
+            const savedMarket = localStorage.getItem('finorix_selected_market');
+            if (savedMarket && SYMBOLS[savedMarket]) {
+                selectedMarket = savedMarket;
+                const marketSelectEl = document.getElementById('market-select');
+                if (marketSelectEl) marketSelectEl.value = savedMarket;
+                document.querySelectorAll('.market-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.getAttribute('data-market') === savedMarket);
+                });
+            }
+
             const marketButtons = document.querySelectorAll('.market-btn');
             marketButtons.forEach(btn => {
                 btn.addEventListener('click', function() {
@@ -2016,6 +2547,7 @@
 
             const timezoneSelect = document.getElementById('timezone-select');
             if (timezoneSelect) {
+                // Restore saved timezone
                 const savedTz = localStorage.getItem('signal_timezone_offset');
                 if (savedTz !== null) {
                     timezoneSelect.value = savedTz;
@@ -2023,7 +2555,8 @@
 
                 timezoneSelect.addEventListener('change', function() {
                     localStorage.setItem('signal_timezone_offset', this.value);
-                    // Signal will update on next candle tick automatically
+                    // Reload TradingView widget with new timezone
+                    loadTradingView(SYMBOLS[selectedMarket] || 'FX:EURUSD');
                 });
 
                 // Signal is started via startSignalUpdates() after auth check
