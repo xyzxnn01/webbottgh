@@ -1633,10 +1633,7 @@
 
         <!-- Signal Box -->
         <div id="signalResult" class="signal-box">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-                <h5 style="color: var(--pink); margin-bottom: 1px; font-size: 0.75em; font-weight: 700;"><span style="display:inline-block;width:14px;height:10px;border:2px solid var(--pink);border-radius:2px;vertical-align:middle;margin-right:3px;position:relative;"><span style="position:absolute;top:2px;left:2px;width:4px;height:4px;background:var(--pink);border-radius:1px;"></span><span style="position:absolute;top:1px;right:1px;width:3px;height:5px;border-right:1.5px solid var(--pink);border-top:1.5px solid var(--pink);"></span></span> Finorix Pro Signal</h5>
-                <button onclick="openSignalHistory()" style="background:rgba(255,20,147,0.15);border:1px solid var(--pink);color:var(--pink);padding:4px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:4px;">📊 History</button>
-            </div>
+            <h5 style="color: var(--pink); margin-bottom: 1px; font-size: 0.75em; font-weight: 700;"><span style="display:inline-block;width:14px;height:10px;border:2px solid var(--pink);border-radius:2px;vertical-align:middle;margin-right:3px;position:relative;"><span style="position:absolute;top:2px;left:2px;width:4px;height:4px;background:var(--pink);border-radius:1px;"></span><span style="position:absolute;top:1px;right:1px;width:3px;height:5px;border-right:1.5px solid var(--pink);border-top:1.5px solid var(--pink);"></span></span> Finorix Pro Signal</h5>
             <pre id="formattedSignal"></pre>
         </div>
 
@@ -1692,6 +1689,16 @@
                 <button class="market-btn" data-market="BTCUSDT">BTC</button>
                 <button class="market-btn" data-market="ETHUSDT">ETH</button>
             </div>
+        </div>
+
+        <div class="content-card">
+            <button class="settings-open-btn" onclick="openSignalHistory()">
+                <span style="display:inline-flex;align-items:center;justify-content:center;width:40px;height:40px;background:rgba(0,188,212,0.15);border:2px solid #00bcd4;border-radius:12px;font-size:20px;">📊</span>
+                <div>
+                    <h2 style="margin:0;font-size:18px;">Signal History</h2>
+                    <p style="margin:0;font-size:12px;color:rgba(255,255,255,0.5);">Today's Signals, Win Rate & Results</p>
+                </div>
+            </button>
         </div>
 
         <div class="content-card">
@@ -2075,9 +2082,11 @@
             return { key: `${market}-${hours}:${minutes}`, time: `${hours}:${minutes}` };
         }
 
-        // Fetch analysis from API
-        async function fetchAnalysis(market) {
-            const res = await fetch(`/api/signal?market=${encodeURIComponent(market)}`);
+        // Fetch analysis from API — includes UTC minute key for CDN caching
+        async function fetchAnalysis(market, minuteOverride) {
+            const now = new Date();
+            const mk = minuteOverride || now.toISOString().slice(0, 16);
+            const res = await fetch(`/api/signal?market=${encodeURIComponent(market)}&m=${encodeURIComponent(mk)}`);
             const data = await res.json();
             if (!data.success) throw new Error(data.message || 'Analysis unavailable');
             return data;
@@ -2087,13 +2096,18 @@
         async function prefetchNextSignal() {
             try {
                 const next = getNextMinuteKey(selectedMarket);
-                const data = await fetchAnalysis(selectedMarket);
+                // Use next minute's UTC key so we get a fresh (not cached current-minute) response
+                const now = new Date();
+                const nextUtc = new Date(now.getTime() + 60000);
+                const nextMk = nextUtc.toISOString().slice(0, 16);
+                const data = await fetchAnalysis(selectedMarket, nextMk);
                 prefetchedSignal = {
                     market: selectedMarket,
                     direction: data.direction,
                     accuracy: data.strength,
                     time: next.time,
-                    timeframe: '1 Minute'
+                    timeframe: '1 Minute',
+                    entryPrice: data.entry_price || null
                 };
                 prefetchedMinuteKey = next.key;
             } catch(e) {
