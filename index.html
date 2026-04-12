@@ -2074,8 +2074,6 @@
         let lockedMinuteKey = '';       // "MARKET-HH:MM" key for current lock
         let countdownInterval = null;   // Countdown timer interval
         let isTransitioning = false;    // True during candle transition animation
-        let lastClosedSignal = null;    // Previous candle's signal for WIN/LOSS check
-        let lastEntryPrice = null;      // Entry price of previous signal
 
         // ===== MTG (Martingale) CHAIN SYSTEM =====
         // Loss → same direction next candle. Chain: MTG → MTG 2 → MTG 3... until WIN.
@@ -2309,31 +2307,32 @@
             if (isTransitioning) return;
             isTransitioning = true;
 
-            // Step 1: Determine WIN/LOSS from previous signal
-            if (lastClosedSignal && lastClosedSignal.direction !== 'SKIP') {
+            // Step 1: Determine WIN/LOSS from the just-closed candle's locked signal
+            const closingSignal = lockedSignal;
+            if (closingSignal && closingSignal.direction !== 'SKIP') {
                 try {
                     const serverSig = await fetchSignalFromServer(selectedMarket);
                     const closePrice = serverSig.entryPrice;
+                    const entryPrice = closingSignal.entryPrice;
                     let result = 'DRAW';
-                    if (closePrice != null && lastEntryPrice != null) {
-                        if (lastClosedSignal.direction === 'CALL') {
-                            result = closePrice > lastEntryPrice ? 'WIN' : 'LOSS';
-                        } else if (lastClosedSignal.direction === 'PUT') {
-                            result = closePrice < lastEntryPrice ? 'WIN' : 'LOSS';
+                    if (closePrice != null && entryPrice != null) {
+                        if (closingSignal.direction === 'CALL') {
+                            result = closePrice > entryPrice ? 'WIN' : 'LOSS';
+                        } else if (closingSignal.direction === 'PUT') {
+                            result = closePrice < entryPrice ? 'WIN' : 'LOSS';
                         }
-                    } else if (closePrice == null && lastEntryPrice == null) {
+                    } else if (closePrice == null && entryPrice == null) {
                         result = null;
                     }
 
                     // ===== MTG CHAIN LOGIC =====
-                    // Every signal stored as PENDING at lock. On WIN → WIN. On LOSS → 'MTG' (stays pending-like).
-                    // When chain finally wins → all chain entries resolved to WIN.
+                    // WIN → store as WIN, resolve all chain entries to WIN.
+                    // LOSS → store as MTG (pending), lock same direction for next candle.
                     if (result === null) {
                         // Could not determine — skip result, no MTG change
                     } else if (result === 'WIN') {
-                        // WIN — update current entry to WIN
                         showResultHTML('WIN');
-                        storeSignalToHistory(lastClosedSignal, closePrice, 'WIN', lastClosedSignal.mtgLevel || 0);
+                        storeSignalToHistory(closingSignal, closePrice, 'WIN', closingSignal.mtgLevel || 0);
                         // Resolve all previous chain entries to WIN
                         if (mtgChainKeys.length > 0) {
                             resolveChain(selectedMarket, mtgChainKeys);
@@ -2343,15 +2342,16 @@
                         mtgDirection = '';
                         mtgOriginalSignal = null;
                     } else if (result === 'LOSS') {
-                        // LOSS — mark entry as 'MTG' (chain member, stays pending until chain wins)
                         showResultHTML('LOSS');
-                        storeSignalToHistory(lastClosedSignal, closePrice, 'MTG', lastClosedSignal.mtgLevel || 0);
-                        mtgChainKeys.push(lastClosedSignal.minuteKey);
+                        // Lock direction on FIRST loss only — never changes until WIN
                         if (!mtgOriginalSignal) {
-                            mtgOriginalSignal = { ...lastClosedSignal };
+                            mtgOriginalSignal = { ...closingSignal };
+                            mtgDirection = closingSignal.direction;
                         }
-                        mtgDirection = lastClosedSignal.direction; // Same direction
-                        mtgLevel = (lastClosedSignal.mtgLevel || 0) + 1; // Increment chain
+                        // Increment chain level, then store with new level for correct badge
+                        mtgLevel = (closingSignal.mtgLevel || 0) + 1;
+                        storeSignalToHistory(closingSignal, closePrice, 'MTG', mtgLevel);
+                        mtgChainKeys.push(closingSignal.minuteKey);
                     }
                     await new Promise(r => setTimeout(r, 1000));
                     // Refresh history if overlay is open
@@ -2367,11 +2367,7 @@
             showAnalyzingAnimation();
             await new Promise(r => setTimeout(r, 1500));
 
-            // Step 3: Save current signal as last before locking new one
-            lastClosedSignal = lockedSignal;
-            lastEntryPrice = lockedSignal ? lockedSignal.entryPrice : null;
-
-            // Step 4: Lock new signal
+            // Step 3: Lock new signal for the new candle
             await lockSignalForCurrentCandle();
             isTransitioning = false;
         }
@@ -2525,8 +2521,6 @@
             lockedSignal = null;
             lockedMinuteKey = '';
             isTransitioning = false;
-            lastClosedSignal = null;
-            lastEntryPrice = null;
             // Reset MTG state on market change
             mtgLevel = 0;
             mtgDirection = '';
@@ -2594,13 +2588,13 @@
                 let html = '';
                 for (const s of data.signals) {
                     const dirClass = s.direction === 'CALL' ? 'call' : s.direction === 'PUT' ? 'put' : 'skip';
+                    const mtgNum = s.is_mtg || 0;
                     const resClass = s.result === 'WIN' ? 'win' : s.result === 'LOSS' ? 'loss' : s.result === 'DRAW' ? 'draw' : 'pending';
-                    const resLabel = s.result === 'MTG' ? '↻ PENDING' : (s.result || 'PENDING');
+                    const resLabel = s.result === 'MTG' ? '↻ PENDING' : (s.result === 'WIN' && mtgNum > 0) ? 'MTG WIN' : (s.result || 'PENDING');
                     // Extract time from minute_key (format: YYYY-MM-DDTHH:MM)
                     const timeStr = s.minute_key ? s.minute_key.slice(11, 16) : '--:--';
                     const entryStr = s.entry_price != null ? Number(s.entry_price).toFixed(5) : '--';
                     const exitStr = s.exit_price != null ? Number(s.exit_price).toFixed(5) : '--';
-                    const mtgNum = s.is_mtg || 0;
                     const mtgLabel = mtgNum === 1 ? '<span style="background:rgba(255,152,0,0.2);color:#ffb74d;font-size:9px;padding:1px 4px;border-radius:3px;border:1px solid rgba(255,152,0,0.3);font-weight:700;">↻ MTG</span>' : mtgNum > 1 ? '<span style="background:rgba(255,152,0,0.2);color:#ffb74d;font-size:9px;padding:1px 4px;border-radius:3px;border:1px solid rgba(255,152,0,0.3);font-weight:700;">↻ MTG ' + mtgNum + '</span>' : '';
 
                     html += `<div class="history-item" style="position:relative;">
