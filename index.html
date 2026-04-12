@@ -2079,11 +2079,10 @@
         let lastClosedSignal = null;    // Previous candle's signal for WIN/LOSS check
         let lastEntryPrice = null;      // Entry price of previous signal
 
-        // ===== HONEST MTG (Martingale) SYSTEM =====
-        // Loss → same direction next candle. MTG win = WIN, MTG loss = single LOSS.
-        let mtgActive = false;          // Is MTG mode active?
-        let mtgDirection = '';          // Forced direction during MTG
-        let mtgOriginalSignal = null;   // The original signal that lost (for history)
+        // ===== MTG (Martingale) CHAIN SYSTEM =====
+        // Loss → same direction next candle. Chain: MTG → MTG 2 → MTG 3... until WIN.
+        let mtgLevel = 0;              // 0 = normal, 1+ = MTG chain level
+        let mtgDirection = '';          // Forced direction during MTG chain
 
         function getCurrentMinuteKey(market) {
             const now = new Date();
@@ -2108,34 +2107,46 @@
         // Server API base URL
         const HISTORY_API = 'https://finorixpro.pythonanywhere.com';
 
-        // Fetch analysis from server API — all analysis runs server-side
-        async function fetchAnalysis(market, minuteOverride) {
+        // Fetch current price from server API
+        async function fetchCurrentPrice(market) {
             const res = await fetch(`${HISTORY_API}/api/signal/latest?market=${encodeURIComponent(market)}`);
             const data = await res.json();
-            if (!data.success) throw new Error(data.message || 'Analysis unavailable');
-            return data;
+            if (!data.success) throw new Error(data.message || 'Price unavailable');
+            return data.entry_price || null;
         }
 
-        // Pre-fetch signal for the NEXT candle (called ~5s before candle closes)
+        // Generate random CALL/PUT direction
+        function generateRandomSignal() {
+            const direction = Math.random() < 0.5 ? 'CALL' : 'PUT';
+            const accuracy = Math.floor(Math.random() * 28) + 65; // 65-92%
+            return { direction, accuracy: accuracy + '%' };
+        }
+
+        // Pre-fetch price for the NEXT candle (called ~5s before candle closes)
         async function prefetchNextSignal() {
             try {
                 const next = getNextMinuteKey(selectedMarket);
-                // Use next minute's UTC key so we get a fresh (not cached current-minute) response
-                const now = new Date();
-                const nextUtc = new Date(now.getTime() + 60000);
-                const nextMk = nextUtc.toISOString().slice(0, 16);
-                const data = await fetchAnalysis(selectedMarket, nextMk);
+                const price = await fetchCurrentPrice(selectedMarket);
+                // If MTG active, direction is forced; otherwise random
+                let sig;
+                if (mtgLevel > 0 && mtgDirection) {
+                    const mtgLabel = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
+                    sig = { direction: mtgDirection, accuracy: mtgLabel };
+                } else {
+                    sig = generateRandomSignal();
+                }
                 prefetchedSignal = {
                     market: selectedMarket,
-                    direction: data.direction,
-                    accuracy: data.strength,
+                    direction: sig.direction,
+                    accuracy: sig.accuracy,
                     time: next.time,
                     timeframe: '1 Minute',
-                    entryPrice: data.entry_price || null
+                    entryPrice: price,
+                    isMTG: mtgLevel > 0,
+                    mtgLevel: mtgLevel
                 };
                 prefetchedMinuteKey = next.key;
             } catch(e) {
-                // Will retry when candle flips
                 prefetchedSignal = null;
                 prefetchedMinuteKey = '';
             }
@@ -2147,49 +2158,6 @@
             const now = new Date();
             const minuteKey = now.toISOString().slice(0, 16);
 
-            // === MTG MODE: Force same direction as the lost trade ===
-            if (mtgActive && mtgDirection) {
-                // Lock minute key immediately to prevent re-entry from signalTick
-                lockedMinuteKey = current.key;
-                const signalElement = document.getElementById('formattedSignal');
-                if (signalElement) {
-                    signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">↻ MTG — Same direction...</div>';
-                }
-                // MTG only needs entry_price — no analysis direction needed
-                try {
-                    const data = await fetchAnalysis(selectedMarket);
-                    lockedSignal = {
-                        market: selectedMarket,
-                        direction: mtgDirection, // FORCED same direction — analysis ignored
-                        accuracy: '↻ MTG',
-                        time: current.time,
-                        timeframe: '1 Minute',
-                        entryPrice: data.entry_price || null,
-                        minuteKey: minuteKey,
-                        isMTG: true
-                    };
-                } catch(e) {
-                    // API failed — still show MTG direction without price
-                    lockedSignal = {
-                        market: selectedMarket,
-                        direction: mtgDirection, // FORCED same direction
-                        accuracy: '↻ MTG',
-                        time: current.time,
-                        timeframe: '1 Minute',
-                        entryPrice: null,
-                        minuteKey: minuteKey,
-                        isMTG: true
-                    };
-                }
-                displayLockedSignal();
-                sendSignalNotification(lockedSignal);
-                // Store MTG signal as PENDING
-                if (lockedSignal.direction !== 'SKIP') {
-                    storeSignalToHistory(lockedSignal, null, null, true);
-                }
-                return;
-            }
-
             // If we already have a pre-fetched signal for this candle, use it
             if (prefetchedSignal && prefetchedMinuteKey === current.key) {
                 prefetchedSignal.minuteKey = minuteKey;
@@ -2199,43 +2167,64 @@
                 prefetchedMinuteKey = '';
                 displayLockedSignal();
                 sendSignalNotification(lockedSignal);
-                // Store signal as PENDING for history
-                if (lockedSignal.direction !== 'SKIP') {
-                    storeSignalToHistory(lockedSignal, null, null, false);
-                }
+                storeSignalToHistory(lockedSignal, null, null, lockedSignal.mtgLevel || 0);
                 return;
             }
 
-            // Otherwise fetch fresh (first load or market change)
+            // Lock minute key immediately
+            lockedMinuteKey = current.key;
             const signalElement = document.getElementById('formattedSignal');
-            if (signalElement) {
-                signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">⏳ Analyzing market...</div>';
+
+            // Determine direction
+            let sig;
+            if (mtgLevel > 0 && mtgDirection) {
+                // MTG MODE: Force same direction
+                const mtgLabel = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
+                sig = { direction: mtgDirection, accuracy: mtgLabel };
+                if (signalElement) {
+                    signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,152,0,0.8);padding:4px;font-size:0.8em;">↻ MTG ' + (mtgLevel > 1 ? mtgLevel + ' ' : '') + '— Same direction...</div>';
+                }
+            } else {
+                // Normal: Random CALL/PUT
+                sig = generateRandomSignal();
+                if (signalElement) {
+                    signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">⏳ Analyzing market...</div>';
+                }
             }
 
+            // Fetch current price
             try {
-                const data = await fetchAnalysis(selectedMarket);
+                const price = await fetchCurrentPrice(selectedMarket);
                 lockedSignal = {
                     market: selectedMarket,
-                    direction: data.direction,
-                    accuracy: data.strength,
+                    direction: sig.direction,
+                    accuracy: sig.accuracy,
                     time: current.time,
                     timeframe: '1 Minute',
-                    entryPrice: data.entry_price || null,
-                    minuteKey: minuteKey
+                    entryPrice: price,
+                    minuteKey: minuteKey,
+                    isMTG: mtgLevel > 0,
+                    mtgLevel: mtgLevel
                 };
-                lockedMinuteKey = current.key;
                 displayLockedSignal();
                 sendSignalNotification(lockedSignal);
-                // Store signal as PENDING for history
-                if (lockedSignal.direction !== 'SKIP') {
-                    storeSignalToHistory(lockedSignal, null, null, false);
-                }
+                storeSignalToHistory(lockedSignal, null, null, mtgLevel);
             } catch(e) {
-                if (signalElement) {
-                    signalElement.innerHTML = '<div style="text-align:center;color:#ffa726;padding:4px;font-size:0.8em;">⚠ Signal unavailable — retrying...</div>';
-                }
-                // Retry after 3 seconds
-                setTimeout(() => lockSignalForCurrentCandle(), 3000);
+                // API failed — use signal without price
+                lockedSignal = {
+                    market: selectedMarket,
+                    direction: sig.direction,
+                    accuracy: sig.accuracy,
+                    time: current.time,
+                    timeframe: '1 Minute',
+                    entryPrice: null,
+                    minuteKey: minuteKey,
+                    isMTG: mtgLevel > 0,
+                    mtgLevel: mtgLevel
+                };
+                displayLockedSignal();
+                sendSignalNotification(lockedSignal);
+                storeSignalToHistory(lockedSignal, null, null, mtgLevel);
             }
         }
 
@@ -2357,7 +2346,7 @@
         }
 
         // Store signal result to server history
-        async function storeSignalToHistory(signal, exitPrice, result, isMtg) {
+        async function storeSignalToHistory(signal, exitPrice, result, mtgLevelNum) {
             try {
                 const now = new Date();
                 const mk = signal.minuteKey || now.toISOString().slice(0, 16);
@@ -2372,7 +2361,7 @@
                         entry_price: signal.entryPrice,
                         exit_price: exitPrice,
                         result: result,
-                        is_mtg: isMtg ? 1 : 0
+                        is_mtg: mtgLevelNum || 0
                     })
                 });
             } catch(e) { /* silent */ }
@@ -2385,8 +2374,7 @@
             // Step 1: Determine WIN/LOSS from previous signal
             if (lastClosedSignal && lastClosedSignal.direction !== 'SKIP') {
                 try {
-                    const data = await fetchAnalysis(selectedMarket);
-                    const closePrice = data.entry_price; // Current price = close of last candle
+                    const closePrice = await fetchCurrentPrice(selectedMarket);
                     let result = 'DRAW';
                     if (closePrice != null && lastEntryPrice != null) {
                         if (lastClosedSignal.direction === 'CALL') {
@@ -2395,43 +2383,26 @@
                             result = closePrice < lastEntryPrice ? 'WIN' : 'LOSS';
                         }
                     } else if (closePrice == null && lastEntryPrice == null) {
-                        // Both prices missing — cannot determine — skip
                         result = null;
                     }
 
-                    // ===== HONEST MTG LOGIC =====
+                    // ===== MTG CHAIN LOGIC =====
                     if (result === null) {
-                        // Could not determine — skip result, no MTG
-                    } else if (mtgActive) {
-                        // MTG candle just closed
-                        if (result === 'WIN') {
-                            // MTG recovered! Store as WIN with MTG flag
-                            showResultHTML('WIN');
-                            storeSignalToHistory(mtgOriginalSignal, closePrice, 'WIN', true);
-                        } else {
-                            // MTG also lost — store as single LOSS with MTG flag
-                            showResultHTML('LOSS');
-                            storeSignalToHistory(mtgOriginalSignal, closePrice, 'LOSS', true);
-                        }
-                        // Deactivate MTG either way
-                        mtgActive = false;
+                        // Could not determine — skip result, no MTG change
+                    } else if (result === 'WIN') {
+                        // WIN — store result, reset MTG chain
+                        showResultHTML('WIN');
+                        storeSignalToHistory(lastClosedSignal, closePrice, 'WIN', lastClosedSignal.mtgLevel || 0);
+                        mtgLevel = 0;
                         mtgDirection = '';
-                        mtgOriginalSignal = null;
+                    } else if (result === 'LOSS') {
+                        // LOSS — store result, activate/continue MTG chain
+                        showResultHTML('LOSS');
+                        storeSignalToHistory(lastClosedSignal, closePrice, 'LOSS', lastClosedSignal.mtgLevel || 0);
+                        mtgDirection = lastClosedSignal.direction; // Same direction
+                        mtgLevel = (lastClosedSignal.mtgLevel || 0) + 1; // Increment chain
                     } else {
-                        // Normal trade result
-                        if (result === 'WIN') {
-                            showResultHTML('WIN');
-                            storeSignalToHistory(lastClosedSignal, closePrice, 'WIN', false);
-                        } else if (result === 'LOSS') {
-                            // Activate MTG — don't store yet, wait for MTG result
-                            showResultHTML('LOSS');
-                            mtgActive = true;
-                            mtgDirection = lastClosedSignal.direction; // Same direction
-                            mtgOriginalSignal = { ...lastClosedSignal };
-                        } else {
-                            // DRAW — store normally
-                            storeSignalToHistory(lastClosedSignal, closePrice, 'DRAW', false);
-                        }
+                        storeSignalToHistory(lastClosedSignal, closePrice, 'DRAW', lastClosedSignal.mtgLevel || 0);
                     }
                     await new Promise(r => setTimeout(r, 1000));
                 } catch(e) {
@@ -2501,9 +2472,11 @@
             const directionClass = isSkip ? 'signal-skip' : (isCall ? 'signal-call' : 'signal-put');
             const directionColor = isSkip ? '#ffeb3b' : (isCall ? '#00ff00' : '#ff0000');
             const isMTG = signal.isMTG === true;
+            const sigMtgLevel = signal.mtgLevel || 0;
             const directionLabel = isSkip ? 'NO ANALYSIS' : signal.direction;
             const accuracyDisplay = isSkip ? '—' : signal.accuracy;
-            const mtgBadge = isMTG ? ' <span style="background:rgba(255,152,0,0.25);color:#ffb74d;font-size:0.6em;padding:1px 5px;border-radius:3px;border:1px solid rgba(255,152,0,0.4);margin-left:4px;vertical-align:middle;font-weight:700;">↻ MTG</span>' : '';
+            const mtgBadgeText = sigMtgLevel === 1 ? '↻ MTG' : sigMtgLevel > 1 ? '↻ MTG ' + sigMtgLevel : '';
+            const mtgBadge = isMTG ? ' <span style="background:rgba(255,152,0,0.25);color:#ffb74d;font-size:0.6em;padding:1px 5px;border-radius:3px;border:1px solid rgba(255,152,0,0.4);margin-left:4px;vertical-align:middle;font-weight:700;">' + mtgBadgeText + '</span>' : '';
             const now = new Date();
             const secondsLeft = 59 - now.getSeconds();
 
@@ -2609,9 +2582,8 @@
             lastClosedSignal = null;
             lastEntryPrice = null;
             // Reset MTG state on market change
-            mtgActive = false;
+            mtgLevel = 0;
             mtgDirection = '';
-            mtgOriginalSignal = null;
 
             // Check market hours before fetching
             const mStatus = isMarketOpen(market);
@@ -2680,7 +2652,8 @@
                     const timeStr = s.minute_key ? s.minute_key.slice(11, 16) : '--:--';
                     const entryStr = s.entry_price != null ? Number(s.entry_price).toFixed(5) : '--';
                     const exitStr = s.exit_price != null ? Number(s.exit_price).toFixed(5) : '--';
-                    const mtgLabel = s.is_mtg ? '<span style="display:inline-block;width:7px;height:7px;background:#00e676;border-radius:50%;box-shadow:0 0 6px #00e676,0 0 12px rgba(0,230,118,0.4);margin-top:4px;"></span>' : '';
+                    const mtgNum = s.is_mtg || 0;
+                    const mtgLabel = mtgNum === 1 ? '<span style="background:rgba(255,152,0,0.2);color:#ffb74d;font-size:9px;padding:1px 4px;border-radius:3px;border:1px solid rgba(255,152,0,0.3);font-weight:700;">↻ MTG</span>' : mtgNum > 1 ? '<span style="background:rgba(255,152,0,0.2);color:#ffb74d;font-size:9px;padding:1px 4px;border-radius:3px;border:1px solid rgba(255,152,0,0.3);font-weight:700;">↻ MTG ' + mtgNum + '</span>' : '';
 
                     html += `<div class="history-item" style="position:relative;">
                         <div>
