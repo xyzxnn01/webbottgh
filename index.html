@@ -2075,13 +2075,6 @@
         let countdownInterval = null;   // Countdown timer interval
         let isTransitioning = false;    // True during candle transition animation
 
-        // ===== MTG (Martingale) CHAIN SYSTEM =====
-        // Loss → same direction next candle. Chain: MTG → MTG 2 → MTG 3... until WIN.
-        let mtgLevel = 0;              // 0 = normal, 1+ = MTG chain level
-        let mtgDirection = '';          // Forced direction during MTG chain
-        let mtgOriginalSignal = null;   // Track original signal through MTG chain
-        let mtgChainKeys = [];          // minute_keys of current MTG chain (PENDING until WIN)
-
         function getCurrentMinuteKey(market) {
             const now = new Date();
             const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -2095,61 +2088,45 @@
         // Server API base URL
         const HISTORY_API = 'https://finorixpro.pythonanywhere.com';
 
-        // Fetch signal + price from server API (server generates same random signal for all users per UTC minute)
+        // Fetch signal + price from server API (server handles direction, MTG, storage — all devices identical)
         async function fetchSignalFromServer(market) {
             const res = await fetch(`${HISTORY_API}/api/signal/latest?market=${encodeURIComponent(market)}`);
             const data = await res.json();
             if (!data.success) throw new Error(data.message || 'Signal unavailable');
-            return { direction: data.direction, accuracy: data.strength, entryPrice: data.entry_price || null };
+            return {
+                direction: data.direction,
+                accuracy: data.strength,
+                entryPrice: data.entry_price || null,
+                isMTG: data.is_mtg || false,
+                mtgLevel: data.mtg_level || 0,
+                prevResult: data.prev_result || null
+            };
         }
 
-        // Lock the signal at candle open (start of new minute) — always fetch fresh from server
+        // Lock the signal at candle open — fetch from server (server creates & stores signal)
         async function lockSignalForCurrentCandle() {
             const current = getCurrentMinuteKey(selectedMarket);
-            const now = new Date();
-            const minuteKey = now.toISOString().slice(0, 16);
-
-            // Lock minute key immediately
             lockedMinuteKey = current.key;
             const signalElement = document.getElementById('formattedSignal');
 
-            if (mtgLevel > 0 && mtgDirection) {
-                if (signalElement) {
-                    signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,152,0,0.8);padding:4px;font-size:0.8em;">↻ MTG ' + (mtgLevel > 1 ? mtgLevel + ' ' : '') + '— Same direction...</div>';
-                }
-            } else {
-                if (signalElement) {
-                    signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">⏳ Analyzing market...</div>';
-                }
+            if (signalElement) {
+                signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">⏳ Analyzing market...</div>';
             }
 
-            // Fetch signal + price from server
             try {
                 const serverSig = await fetchSignalFromServer(selectedMarket);
-                let dir, acc;
-                if (mtgLevel > 0 && mtgDirection) {
-                    // MTG MODE: Force same direction, ignore server direction
-                    dir = mtgDirection;
-                    acc = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
-                } else {
-                    // Normal: Use server-generated direction (same for all users)
-                    dir = serverSig.direction;
-                    acc = serverSig.accuracy;
-                }
                 lockedSignal = {
                     market: selectedMarket,
-                    direction: dir,
-                    accuracy: acc,
+                    direction: serverSig.direction,
+                    accuracy: serverSig.accuracy,
                     time: current.time,
                     timeframe: '1 Minute',
                     entryPrice: serverSig.entryPrice,
-                    minuteKey: minuteKey,
-                    isMTG: mtgLevel > 0,
-                    mtgLevel: mtgLevel
+                    isMTG: serverSig.isMTG,
+                    mtgLevel: serverSig.mtgLevel
                 };
                 displayLockedSignal();
                 sendSignalNotification(lockedSignal);
-                storeSignalToHistory(lockedSignal, null, null, mtgLevel);
             } catch(e) {
                 if (signalElement) {
                     signalElement.innerHTML = '<div style="text-align:center;color:#ffa726;padding:4px;font-size:0.8em;">⚠ Signal unavailable — retrying...</div>';
@@ -2270,105 +2247,50 @@
             el.innerHTML = `<div class="${cls}">${icon} ${result}</div>`;
         }
 
-        // Resolve all PENDING/MTG entries in the chain to WIN
-        async function resolveChain(market, minuteKeys) {
-            try {
-                await fetch(`${HISTORY_API}/api/signal-history/resolve-chain`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ market: market, minute_keys: minuteKeys })
-                });
-            } catch(e) { /* silent */ }
-        }
-
-        // Store signal result to server history
-        async function storeSignalToHistory(signal, exitPrice, result, mtgLevelNum) {
-            try {
-                const now = new Date();
-                const mk = signal.minuteKey || now.toISOString().slice(0, 16);
-                await fetch(`${HISTORY_API}/api/signal-history/store`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        market: signal.market,
-                        minute_key: mk,
-                        direction: signal.direction,
-                        strength: signal.accuracy || '',
-                        entry_price: signal.entryPrice,
-                        exit_price: exitPrice,
-                        result: result,
-                        is_mtg: mtgLevelNum || 0
-                    })
-                });
-            } catch(e) { /* silent */ }
-        }
-
         async function handleCandleTransition() {
             if (isTransitioning) return;
             isTransitioning = true;
 
-            // Step 1: Determine WIN/LOSS from the just-closed candle's locked signal
-            const closingSignal = lockedSignal;
-            if (closingSignal && closingSignal.direction !== 'SKIP') {
-                try {
-                    const serverSig = await fetchSignalFromServer(selectedMarket);
-                    const closePrice = serverSig.entryPrice;
-                    const entryPrice = closingSignal.entryPrice;
-                    let result = 'DRAW';
-                    if (closePrice != null && entryPrice != null) {
-                        if (closingSignal.direction === 'CALL') {
-                            result = closePrice > entryPrice ? 'WIN' : 'LOSS';
-                        } else if (closingSignal.direction === 'PUT') {
-                            result = closePrice < entryPrice ? 'WIN' : 'LOSS';
-                        }
-                    } else if (closePrice == null && entryPrice == null) {
-                        result = null;
-                    }
+            // Fetch new signal from server (triggers resolution of previous candle + MTG)
+            let serverSig = null;
+            try {
+                serverSig = await fetchSignalFromServer(selectedMarket);
+            } catch(e) {}
 
-                    // ===== MTG CHAIN LOGIC =====
-                    // WIN → store as WIN, resolve all chain entries to WIN.
-                    // LOSS → store as MTG (pending), lock same direction for next candle.
-                    if (result === null) {
-                        // Could not determine — skip result, no MTG change
-                    } else if (result === 'WIN') {
-                        showResultHTML('WIN');
-                        storeSignalToHistory(closingSignal, closePrice, 'WIN', closingSignal.mtgLevel || 0);
-                        // Resolve all previous chain entries to WIN
-                        if (mtgChainKeys.length > 0) {
-                            resolveChain(selectedMarket, mtgChainKeys);
-                            mtgChainKeys = [];
-                        }
-                        mtgLevel = 0;
-                        mtgDirection = '';
-                        mtgOriginalSignal = null;
-                    } else if (result === 'LOSS') {
-                        showResultHTML('LOSS');
-                        // Lock direction on FIRST loss only — never changes until WIN
-                        if (!mtgOriginalSignal) {
-                            mtgOriginalSignal = { ...closingSignal };
-                            mtgDirection = closingSignal.direction;
-                        }
-                        // Increment chain level, then store with new level for correct badge
-                        mtgLevel = (closingSignal.mtgLevel || 0) + 1;
-                        storeSignalToHistory(closingSignal, closePrice, 'MTG', mtgLevel);
-                        mtgChainKeys.push(closingSignal.minuteKey);
-                    }
-                    await new Promise(r => setTimeout(r, 1000));
-                    // Refresh history if overlay is open
-                    if (document.getElementById('historyOverlay')?.classList.contains('show')) {
-                        loadSignalHistory();
-                    }
-                } catch(e) {
-                    // Skip result display on error
+            // Show WIN/LOSS result from previous candle (server resolves and tells us)
+            if (lockedSignal && lockedSignal.direction !== 'SKIP' && serverSig && serverSig.prevResult) {
+                showResultHTML(serverSig.prevResult);
+                await new Promise(r => setTimeout(r, 1000));
+                if (document.getElementById('historyOverlay')?.classList.contains('show')) {
+                    loadSignalHistory();
                 }
             }
 
-            // Step 2: Show analyzing animation for ~1.5 seconds
+            // Show analyzing animation
             showAnalyzingAnimation();
             await new Promise(r => setTimeout(r, 1500));
 
-            // Step 3: Lock new signal for the new candle
-            await lockSignalForCurrentCandle();
+            // Lock new signal using already-fetched data
+            const current = getCurrentMinuteKey(selectedMarket);
+            lockedMinuteKey = current.key;
+
+            if (serverSig) {
+                lockedSignal = {
+                    market: selectedMarket,
+                    direction: serverSig.direction,
+                    accuracy: serverSig.accuracy,
+                    time: current.time,
+                    timeframe: '1 Minute',
+                    entryPrice: serverSig.entryPrice,
+                    isMTG: serverSig.isMTG,
+                    mtgLevel: serverSig.mtgLevel
+                };
+                displayLockedSignal();
+                sendSignalNotification(lockedSignal);
+            } else {
+                await lockSignalForCurrentCandle();
+            }
+
             isTransitioning = false;
         }
 
@@ -2521,11 +2443,6 @@
             lockedSignal = null;
             lockedMinuteKey = '';
             isTransitioning = false;
-            // Reset MTG state on market change
-            mtgLevel = 0;
-            mtgDirection = '';
-            mtgOriginalSignal = null;
-            mtgChainKeys = [];
 
             // Check market hours before fetching
             const mStatus = isMarketOpen(market);
