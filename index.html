@@ -2105,11 +2105,12 @@
             return { key: `${market}-${hours}:${minutes}`, time: `${hours}:${minutes}` };
         }
 
-        // Fetch analysis from API — includes UTC minute key for CDN caching
+        // Server API base URL
+        const HISTORY_API = 'https://finorixpro.pythonanywhere.com';
+
+        // Fetch analysis from server API — all analysis runs server-side
         async function fetchAnalysis(market, minuteOverride) {
-            const now = new Date();
-            const mk = minuteOverride || now.toISOString().slice(0, 16);
-            const res = await fetch(`/api/signal?market=${encodeURIComponent(market)}&m=${encodeURIComponent(mk)}`);
+            const res = await fetch(`${HISTORY_API}/api/signal/latest?market=${encodeURIComponent(market)}`);
             const data = await res.json();
             if (!data.success) throw new Error(data.message || 'Analysis unavailable');
             return data;
@@ -2355,8 +2356,6 @@
         }
 
         // Store signal result to server history
-        const HISTORY_API = 'https://finorixpro.pythonanywhere.com'; // Production
-        // const HISTORY_API_LOCAL = 'http://192.168.5.104:5000'; // Local
         async function storeSignalToHistory(signal, exitPrice, result, isMtg) {
             try {
                 const now = new Date();
