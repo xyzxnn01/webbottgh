@@ -2155,12 +2155,13 @@
                 if (signalElement) {
                     signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">↻ MTG — Same direction...</div>';
                 }
+                // MTG only needs entry_price — no analysis direction needed
                 try {
                     const data = await fetchAnalysis(selectedMarket);
                     lockedSignal = {
                         market: selectedMarket,
-                        direction: mtgDirection, // FORCED same direction
-                        accuracy: data.strength || '—',
+                        direction: mtgDirection, // FORCED same direction — analysis ignored
+                        accuracy: '↻ MTG',
                         time: current.time,
                         timeframe: '1 Minute',
                         entryPrice: data.entry_price || null,
@@ -2168,11 +2169,11 @@
                         isMTG: true
                     };
                 } catch(e) {
-                    // API failed — still show MTG direction without analysis data
+                    // API failed — still show MTG direction without price
                     lockedSignal = {
                         market: selectedMarket,
                         direction: mtgDirection, // FORCED same direction
-                        accuracy: '—',
+                        accuracy: '↻ MTG',
                         time: current.time,
                         timeframe: '1 Minute',
                         entryPrice: null,
@@ -2389,9 +2390,9 @@
                     let result = 'DRAW';
                     if (closePrice != null && lastEntryPrice != null) {
                         if (lastClosedSignal.direction === 'CALL') {
-                            result = closePrice >= lastEntryPrice ? 'WIN' : 'LOSS';
+                            result = closePrice > lastEntryPrice ? 'WIN' : 'LOSS';
                         } else if (lastClosedSignal.direction === 'PUT') {
-                            result = closePrice <= lastEntryPrice ? 'WIN' : 'LOSS';
+                            result = closePrice < lastEntryPrice ? 'WIN' : 'LOSS';
                         }
                     } else if (closePrice == null && lastEntryPrice == null) {
                         // Both prices missing — cannot determine — skip
