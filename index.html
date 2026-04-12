@@ -2251,9 +2251,10 @@
             if (isTransitioning) return;
             isTransitioning = true;
 
-            // Wait 3 seconds for TradingView to update candle open|1 data
-            // Without this delay, open|1 may still show the OLD candle's open
-            await new Promise(r => setTimeout(r, 3000));
+            // Wait 5 seconds for TradingView to update candle data after new minute starts
+            // close|1 at ~5s = very close to previous candle's actual close
+            // open|1 at ~5s = new candle's open (enough time for TradingView to update)
+            await new Promise(r => setTimeout(r, 5000));
 
             // Fetch new signal from server (triggers resolution of previous candle + MTG)
             let serverSig = null;
