@@ -2148,7 +2148,8 @@
 
             // === MTG MODE: Force same direction as the lost trade ===
             if (mtgActive && mtgDirection) {
-                // Still fetch analysis for entry_price, but override direction
+                // Lock minute key immediately to prevent re-entry from signalTick
+                lockedMinuteKey = current.key;
                 const signalElement = document.getElementById('formattedSignal');
                 if (signalElement) {
                     signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">↻ MTG — Same direction...</div>';
@@ -2158,18 +2159,31 @@
                     lockedSignal = {
                         market: selectedMarket,
                         direction: mtgDirection, // FORCED same direction
-                        accuracy: data.strength,
+                        accuracy: data.strength || '—',
                         time: current.time,
                         timeframe: '1 Minute',
                         entryPrice: data.entry_price || null,
                         minuteKey: minuteKey,
                         isMTG: true
                     };
-                    lockedMinuteKey = current.key;
-                    displayLockedSignal();
-                    sendSignalNotification(lockedSignal);
                 } catch(e) {
-                    setTimeout(() => lockSignalForCurrentCandle(), 3000);
+                    // API failed — still show MTG direction without analysis data
+                    lockedSignal = {
+                        market: selectedMarket,
+                        direction: mtgDirection, // FORCED same direction
+                        accuracy: '—',
+                        time: current.time,
+                        timeframe: '1 Minute',
+                        entryPrice: null,
+                        minuteKey: minuteKey,
+                        isMTG: true
+                    };
+                }
+                displayLockedSignal();
+                sendSignalNotification(lockedSignal);
+                // Store MTG signal as PENDING
+                if (lockedSignal.direction !== 'SKIP') {
+                    storeSignalToHistory(lockedSignal, null, null, true);
                 }
                 return;
             }
@@ -2183,6 +2197,10 @@
                 prefetchedMinuteKey = '';
                 displayLockedSignal();
                 sendSignalNotification(lockedSignal);
+                // Store signal as PENDING for history
+                if (lockedSignal.direction !== 'SKIP') {
+                    storeSignalToHistory(lockedSignal, null, null, false);
+                }
                 return;
             }
 
@@ -2206,6 +2224,10 @@
                 lockedMinuteKey = current.key;
                 displayLockedSignal();
                 sendSignalNotification(lockedSignal);
+                // Store signal as PENDING for history
+                if (lockedSignal.direction !== 'SKIP') {
+                    storeSignalToHistory(lockedSignal, null, null, false);
+                }
             } catch(e) {
                 if (signalElement) {
                     signalElement.innerHTML = '<div style="text-align:center;color:#ffa726;padding:4px;font-size:0.8em;">⚠ Signal unavailable — retrying...</div>';
@@ -2361,7 +2383,7 @@
             isTransitioning = true;
 
             // Step 1: Determine WIN/LOSS from previous signal
-            if (lastClosedSignal && lastClosedSignal.direction !== 'SKIP' && lastEntryPrice != null) {
+            if (lastClosedSignal && lastClosedSignal.direction !== 'SKIP') {
                 try {
                     const data = await fetchAnalysis(selectedMarket);
                     const closePrice = data.entry_price; // Current price = close of last candle
@@ -2372,19 +2394,24 @@
                         } else if (lastClosedSignal.direction === 'PUT') {
                             result = closePrice <= lastEntryPrice ? 'WIN' : 'LOSS';
                         }
+                    } else if (closePrice == null && lastEntryPrice == null) {
+                        // Both prices missing — cannot determine — skip
+                        result = null;
                     }
 
                     // ===== HONEST MTG LOGIC =====
-                    if (mtgActive) {
+                    if (result === null) {
+                        // Could not determine — skip result, no MTG
+                    } else if (mtgActive) {
                         // MTG candle just closed
                         if (result === 'WIN') {
                             // MTG recovered! Store as WIN with MTG flag
                             showResultHTML('WIN');
                             storeSignalToHistory(mtgOriginalSignal, closePrice, 'WIN', true);
                         } else {
-                            // MTG also lost — store as single LOSS
+                            // MTG also lost — store as single LOSS with MTG flag
                             showResultHTML('LOSS');
-                            storeSignalToHistory(mtgOriginalSignal, closePrice, 'LOSS', false);
+                            storeSignalToHistory(mtgOriginalSignal, closePrice, 'LOSS', true);
                         }
                         // Deactivate MTG either way
                         mtgActive = false;
@@ -2653,7 +2680,7 @@
                     const timeStr = s.minute_key ? s.minute_key.slice(11, 16) : '--:--';
                     const entryStr = s.entry_price != null ? Number(s.entry_price).toFixed(5) : '--';
                     const exitStr = s.exit_price != null ? Number(s.exit_price).toFixed(5) : '--';
-                    const mtgLabel = s.is_mtg ? '<span style="display:block;font-size:9px;color:#ffb74d;opacity:0.7;text-align:right;margin-top:2px;">↻ MTG</span>' : '';
+                    const mtgLabel = s.is_mtg ? '<span style="display:inline-block;width:7px;height:7px;background:#00e676;border-radius:50%;box-shadow:0 0 6px #00e676,0 0 12px rgba(0,230,118,0.4);margin-top:4px;"></span>' : '';
 
                     html += `<div class="history-item" style="position:relative;">
                         <div>
