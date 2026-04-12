@@ -2079,6 +2079,12 @@
         let lastClosedSignal = null;    // Previous candle's signal for WIN/LOSS check
         let lastEntryPrice = null;      // Entry price of previous signal
 
+        // ===== HONEST MTG (Martingale) SYSTEM =====
+        // Loss → same direction next candle. MTG win = WIN, MTG loss = single LOSS.
+        let mtgActive = false;          // Is MTG mode active?
+        let mtgDirection = '';          // Forced direction during MTG
+        let mtgOriginalSignal = null;   // The original signal that lost (for history)
+
         function getCurrentMinuteKey(market) {
             const now = new Date();
             const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
@@ -2137,9 +2143,40 @@
         // Lock the signal at candle open (start of new minute)
         async function lockSignalForCurrentCandle() {
             const current = getCurrentMinuteKey(selectedMarket);
+            const now = new Date();
+            const minuteKey = now.toISOString().slice(0, 16);
+
+            // === MTG MODE: Force same direction as the lost trade ===
+            if (mtgActive && mtgDirection) {
+                // Still fetch analysis for entry_price, but override direction
+                const signalElement = document.getElementById('formattedSignal');
+                if (signalElement) {
+                    signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">↻ MTG — Same direction...</div>';
+                }
+                try {
+                    const data = await fetchAnalysis(selectedMarket);
+                    lockedSignal = {
+                        market: selectedMarket,
+                        direction: mtgDirection, // FORCED same direction
+                        accuracy: data.strength,
+                        time: current.time,
+                        timeframe: '1 Minute',
+                        entryPrice: data.entry_price || null,
+                        minuteKey: minuteKey,
+                        isMTG: true
+                    };
+                    lockedMinuteKey = current.key;
+                    displayLockedSignal();
+                    sendSignalNotification(lockedSignal);
+                } catch(e) {
+                    setTimeout(() => lockSignalForCurrentCandle(), 3000);
+                }
+                return;
+            }
 
             // If we already have a pre-fetched signal for this candle, use it
             if (prefetchedSignal && prefetchedMinuteKey === current.key) {
+                prefetchedSignal.minuteKey = minuteKey;
                 lockedSignal = prefetchedSignal;
                 lockedMinuteKey = current.key;
                 prefetchedSignal = null;
@@ -2163,7 +2200,8 @@
                     accuracy: data.strength,
                     time: current.time,
                     timeframe: '1 Minute',
-                    entryPrice: data.entry_price || null
+                    entryPrice: data.entry_price || null,
+                    minuteKey: minuteKey
                 };
                 lockedMinuteKey = current.key;
                 displayLockedSignal();
@@ -2294,6 +2332,30 @@
             el.innerHTML = `<div class="${cls}">${icon} ${result}</div>`;
         }
 
+        // Store signal result to server history
+        const HISTORY_API = 'https://finorixpro.pythonanywhere.com'; // Production
+        // const HISTORY_API_LOCAL = 'http://192.168.5.104:5000'; // Local
+        async function storeSignalToHistory(signal, exitPrice, result, isMtg) {
+            try {
+                const now = new Date();
+                const mk = signal.minuteKey || now.toISOString().slice(0, 16);
+                await fetch(`${HISTORY_API}/api/signal-history/store`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        market: signal.market,
+                        minute_key: mk,
+                        direction: signal.direction,
+                        strength: signal.accuracy || '',
+                        entry_price: signal.entryPrice,
+                        exit_price: exitPrice,
+                        result: result,
+                        is_mtg: isMtg ? 1 : 0
+                    })
+                });
+            } catch(e) { /* silent */ }
+        }
+
         async function handleCandleTransition() {
             if (isTransitioning) return;
             isTransitioning = true;
@@ -2311,8 +2373,39 @@
                             result = closePrice <= lastEntryPrice ? 'WIN' : 'LOSS';
                         }
                     }
-                    // Show result for 1 second
-                    showResultHTML(result);
+
+                    // ===== HONEST MTG LOGIC =====
+                    if (mtgActive) {
+                        // MTG candle just closed
+                        if (result === 'WIN') {
+                            // MTG recovered! Store as WIN with MTG flag
+                            showResultHTML('WIN');
+                            storeSignalToHistory(mtgOriginalSignal, closePrice, 'WIN', true);
+                        } else {
+                            // MTG also lost — store as single LOSS
+                            showResultHTML('LOSS');
+                            storeSignalToHistory(mtgOriginalSignal, closePrice, 'LOSS', false);
+                        }
+                        // Deactivate MTG either way
+                        mtgActive = false;
+                        mtgDirection = '';
+                        mtgOriginalSignal = null;
+                    } else {
+                        // Normal trade result
+                        if (result === 'WIN') {
+                            showResultHTML('WIN');
+                            storeSignalToHistory(lastClosedSignal, closePrice, 'WIN', false);
+                        } else if (result === 'LOSS') {
+                            // Activate MTG — don't store yet, wait for MTG result
+                            showResultHTML('LOSS');
+                            mtgActive = true;
+                            mtgDirection = lastClosedSignal.direction; // Same direction
+                            mtgOriginalSignal = { ...lastClosedSignal };
+                        } else {
+                            // DRAW — store normally
+                            storeSignalToHistory(lastClosedSignal, closePrice, 'DRAW', false);
+                        }
+                    }
                     await new Promise(r => setTimeout(r, 1000));
                 } catch(e) {
                     // Skip result display on error
@@ -2380,8 +2473,10 @@
             const candleClass = isSkip ? 'candle-neutral' : (isCall ? 'candle-green' : 'candle-red');
             const directionClass = isSkip ? 'signal-skip' : (isCall ? 'signal-call' : 'signal-put');
             const directionColor = isSkip ? '#ffeb3b' : (isCall ? '#00ff00' : '#ff0000');
+            const isMTG = signal.isMTG === true;
             const directionLabel = isSkip ? 'NO ANALYSIS' : signal.direction;
             const accuracyDisplay = isSkip ? '—' : signal.accuracy;
+            const mtgBadge = isMTG ? ' <span style="background:rgba(255,152,0,0.25);color:#ffb74d;font-size:0.6em;padding:1px 5px;border-radius:3px;border:1px solid rgba(255,152,0,0.4);margin-left:4px;vertical-align:middle;font-weight:700;">↻ MTG</span>' : '';
             const now = new Date();
             const secondsLeft = 59 - now.getSeconds();
 
@@ -2398,7 +2493,7 @@
       <span style="color: #00ff99; font-weight: 700;"><span style="display:inline-block;width:10px;height:10px;border:2px solid #00ff99;border-radius:50%;position:relative;vertical-align:middle;margin-right:2px;"><span style="position:absolute;top:0;left:3px;width:0;height:0;border-left:3px solid transparent;border-right:3px solid transparent;border-bottom:5px solid #00ff99;"></span></span> ${accuracyDisplay}</span>
     </div>
     <div style="margin: 0; font-size: 0.95em;">
-      <span style="color: ${directionColor}; font-weight: 900; text-shadow: 0 0 8px ${directionColor};"><span style="display:inline-block;width:12px;height:9px;border:2px solid ${directionColor};border-radius:1px;vertical-align:middle;margin-right:2px;position:relative;"><span style="position:absolute;top:1px;left:1px;width:3px;height:3px;background:${directionColor};border-radius:1px;"></span></span> ${directionLabel}</span>
+      <span style="color: ${directionColor}; font-weight: 900; text-shadow: 0 0 8px ${directionColor};"><span style="display:inline-block;width:12px;height:9px;border:2px solid ${directionColor};border-radius:1px;vertical-align:middle;margin-right:2px;position:relative;"><span style="position:absolute;top:1px;left:1px;width:3px;height:3px;background:${directionColor};border-radius:1px;"></span></span> ${directionLabel}</span>${mtgBadge}
     </div>
   </div>
   <div style="text-align: right;">
@@ -2486,6 +2581,10 @@
             isTransitioning = false;
             lastClosedSignal = null;
             lastEntryPrice = null;
+            // Reset MTG state on market change
+            mtgActive = false;
+            mtgDirection = '';
+            mtgOriginalSignal = null;
 
             // Check market hours before fetching
             const mStatus = isMarketOpen(market);
@@ -2509,8 +2608,6 @@
         }
 
         // ====== Signal History Functions ======
-        const HISTORY_API = 'https://finorixpro.pythonanywhere.com'; // Production
-        // const HISTORY_API = 'http://192.168.5.104:5000'; // Local
 
         function openSignalHistory() {
             document.getElementById('historyOverlay').classList.add('show');
@@ -2556,14 +2653,18 @@
                     const timeStr = s.minute_key ? s.minute_key.slice(11, 16) : '--:--';
                     const entryStr = s.entry_price != null ? Number(s.entry_price).toFixed(5) : '--';
                     const exitStr = s.exit_price != null ? Number(s.exit_price).toFixed(5) : '--';
+                    const mtgLabel = s.is_mtg ? '<span style="display:block;font-size:9px;color:#ffb74d;opacity:0.7;text-align:right;margin-top:2px;">↻ MTG</span>' : '';
 
-                    html += `<div class="history-item">
+                    html += `<div class="history-item" style="position:relative;">
                         <div>
                             <div class="hi-time">${timeStr} UTC</div>
                             <div class="hi-dir ${dirClass}">${s.direction} <span class="hi-str">${s.strength || ''}</span></div>
                             <div style="font-size:11px;color:rgba(255,255,255,0.35);">${entryStr} → ${exitStr}</div>
                         </div>
-                        <div class="hi-result ${resClass}">${resLabel}</div>
+                        <div style="text-align:right;">
+                            <div class="hi-result ${resClass}">${resLabel}</div>
+                            ${mtgLabel}
+                        </div>
                     </div>`;
                 }
                 listEl.innerHTML = html;
