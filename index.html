@@ -2107,41 +2107,35 @@
         // Server API base URL
         const HISTORY_API = 'https://finorixpro.pythonanywhere.com';
 
-        // Fetch current price from server API
-        async function fetchCurrentPrice(market) {
+        // Fetch signal + price from server API (server generates same random signal for all users)
+        async function fetchSignalFromServer(market) {
             const res = await fetch(`${HISTORY_API}/api/signal/latest?market=${encodeURIComponent(market)}`);
             const data = await res.json();
-            if (!data.success) throw new Error(data.message || 'Price unavailable');
-            return data.entry_price || null;
+            if (!data.success) throw new Error(data.message || 'Signal unavailable');
+            return { direction: data.direction, accuracy: data.strength, entryPrice: data.entry_price || null };
         }
 
-        // Generate random CALL/PUT direction
-        function generateRandomSignal() {
-            const direction = Math.random() < 0.5 ? 'CALL' : 'PUT';
-            const accuracy = Math.floor(Math.random() * 28) + 65; // 65-92%
-            return { direction, accuracy: accuracy + '%' };
-        }
-
-        // Pre-fetch price for the NEXT candle (called ~5s before candle closes)
+        // Pre-fetch signal for the NEXT candle (called ~5s before candle closes)
         async function prefetchNextSignal() {
             try {
                 const next = getNextMinuteKey(selectedMarket);
-                const price = await fetchCurrentPrice(selectedMarket);
-                // If MTG active, direction is forced; otherwise random
-                let sig;
+                const serverSig = await fetchSignalFromServer(selectedMarket);
+                // If MTG active, direction is forced; otherwise use server direction
+                let dir, acc;
                 if (mtgLevel > 0 && mtgDirection) {
-                    const mtgLabel = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
-                    sig = { direction: mtgDirection, accuracy: mtgLabel };
+                    dir = mtgDirection;
+                    acc = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
                 } else {
-                    sig = generateRandomSignal();
+                    dir = serverSig.direction;
+                    acc = serverSig.accuracy;
                 }
                 prefetchedSignal = {
                     market: selectedMarket,
-                    direction: sig.direction,
-                    accuracy: sig.accuracy,
+                    direction: dir,
+                    accuracy: acc,
                     time: next.time,
                     timeframe: '1 Minute',
-                    entryPrice: price,
+                    entryPrice: serverSig.entryPrice,
                     isMTG: mtgLevel > 0,
                     mtgLevel: mtgLevel
                 };
@@ -2175,33 +2169,36 @@
             lockedMinuteKey = current.key;
             const signalElement = document.getElementById('formattedSignal');
 
-            // Determine direction
-            let sig;
             if (mtgLevel > 0 && mtgDirection) {
-                // MTG MODE: Force same direction
-                const mtgLabel = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
-                sig = { direction: mtgDirection, accuracy: mtgLabel };
                 if (signalElement) {
                     signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,152,0,0.8);padding:4px;font-size:0.8em;">↻ MTG ' + (mtgLevel > 1 ? mtgLevel + ' ' : '') + '— Same direction...</div>';
                 }
             } else {
-                // Normal: Random CALL/PUT
-                sig = generateRandomSignal();
                 if (signalElement) {
                     signalElement.innerHTML = '<div style="text-align:center;color:rgba(255,255,255,0.5);padding:4px;font-size:0.8em;">⏳ Analyzing market...</div>';
                 }
             }
 
-            // Fetch current price
+            // Fetch signal + price from server
             try {
-                const price = await fetchCurrentPrice(selectedMarket);
+                const serverSig = await fetchSignalFromServer(selectedMarket);
+                let dir, acc;
+                if (mtgLevel > 0 && mtgDirection) {
+                    // MTG MODE: Force same direction, ignore server direction
+                    dir = mtgDirection;
+                    acc = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
+                } else {
+                    // Normal: Use server-generated direction (same for all users)
+                    dir = serverSig.direction;
+                    acc = serverSig.accuracy;
+                }
                 lockedSignal = {
                     market: selectedMarket,
-                    direction: sig.direction,
-                    accuracy: sig.accuracy,
+                    direction: dir,
+                    accuracy: acc,
                     time: current.time,
                     timeframe: '1 Minute',
-                    entryPrice: price,
+                    entryPrice: serverSig.entryPrice,
                     minuteKey: minuteKey,
                     isMTG: mtgLevel > 0,
                     mtgLevel: mtgLevel
@@ -2210,21 +2207,10 @@
                 sendSignalNotification(lockedSignal);
                 storeSignalToHistory(lockedSignal, null, null, mtgLevel);
             } catch(e) {
-                // API failed — use signal without price
-                lockedSignal = {
-                    market: selectedMarket,
-                    direction: sig.direction,
-                    accuracy: sig.accuracy,
-                    time: current.time,
-                    timeframe: '1 Minute',
-                    entryPrice: null,
-                    minuteKey: minuteKey,
-                    isMTG: mtgLevel > 0,
-                    mtgLevel: mtgLevel
-                };
-                displayLockedSignal();
-                sendSignalNotification(lockedSignal);
-                storeSignalToHistory(lockedSignal, null, null, mtgLevel);
+                if (signalElement) {
+                    signalElement.innerHTML = '<div style="text-align:center;color:#ffa726;padding:4px;font-size:0.8em;">⚠ Signal unavailable — retrying...</div>';
+                }
+                setTimeout(() => lockSignalForCurrentCandle(), 3000);
             }
         }
 
@@ -2374,7 +2360,8 @@
             // Step 1: Determine WIN/LOSS from previous signal
             if (lastClosedSignal && lastClosedSignal.direction !== 'SKIP') {
                 try {
-                    const closePrice = await fetchCurrentPrice(selectedMarket);
+                    const serverSig = await fetchSignalFromServer(selectedMarket);
+                    const closePrice = serverSig.entryPrice;
                     let result = 'DRAW';
                     if (closePrice != null && lastEntryPrice != null) {
                         if (lastClosedSignal.direction === 'CALL') {
