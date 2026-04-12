@@ -2072,8 +2072,6 @@
         // ===== SIGNAL SYSTEM: Candle-synced, locked per minute =====
         let lockedSignal = null;        // Current locked signal (doesn't change mid-candle)
         let lockedMinuteKey = '';       // "MARKET-HH:MM" key for current lock
-        let prefetchedSignal = null;    // Pre-fetched signal for next candle
-        let prefetchedMinuteKey = '';   // Key for pre-fetched signal
         let countdownInterval = null;   // Countdown timer interval
         let isTransitioning = false;    // True during candle transition animation
         let lastClosedSignal = null;    // Previous candle's signal for WIN/LOSS check
@@ -2096,20 +2094,10 @@
             return { key: `${market}-${hours}:${minutes}`, time: `${hours}:${minutes}` };
         }
 
-        function getNextMinuteKey(market) {
-            const now = new Date();
-            const utc = now.getTime() + (now.getTimezoneOffset() * 60000);
-            const tzOffsetMinutes = getSelectedTimezoneOffsetMinutes();
-            const displayTime = new Date(utc + (tzOffsetMinutes * 60000) + 60000); // +1 minute
-            const hours = String(displayTime.getHours()).padStart(2, '0');
-            const minutes = String(displayTime.getMinutes()).padStart(2, '0');
-            return { key: `${market}-${hours}:${minutes}`, time: `${hours}:${minutes}` };
-        }
-
         // Server API base URL
         const HISTORY_API = 'https://finorixpro.pythonanywhere.com';
 
-        // Fetch signal + price from server API (server generates same random signal for all users)
+        // Fetch signal + price from server API (server generates same random signal for all users per UTC minute)
         async function fetchSignalFromServer(market) {
             const res = await fetch(`${HISTORY_API}/api/signal/latest?market=${encodeURIComponent(market)}`);
             const data = await res.json();
@@ -2117,55 +2105,11 @@
             return { direction: data.direction, accuracy: data.strength, entryPrice: data.entry_price || null };
         }
 
-        // Pre-fetch signal for the NEXT candle (called ~5s before candle closes)
-        async function prefetchNextSignal() {
-            try {
-                const next = getNextMinuteKey(selectedMarket);
-                const serverSig = await fetchSignalFromServer(selectedMarket);
-                // If MTG active, direction is forced; otherwise use server direction
-                let dir, acc;
-                if (mtgLevel > 0 && mtgDirection) {
-                    dir = mtgDirection;
-                    acc = mtgLevel === 1 ? '↻ MTG' : '↻ MTG ' + mtgLevel;
-                } else {
-                    dir = serverSig.direction;
-                    acc = serverSig.accuracy;
-                }
-                prefetchedSignal = {
-                    market: selectedMarket,
-                    direction: dir,
-                    accuracy: acc,
-                    time: next.time,
-                    timeframe: '1 Minute',
-                    entryPrice: serverSig.entryPrice,
-                    isMTG: mtgLevel > 0,
-                    mtgLevel: mtgLevel
-                };
-                prefetchedMinuteKey = next.key;
-            } catch(e) {
-                prefetchedSignal = null;
-                prefetchedMinuteKey = '';
-            }
-        }
-
-        // Lock the signal at candle open (start of new minute)
+        // Lock the signal at candle open (start of new minute) — always fetch fresh from server
         async function lockSignalForCurrentCandle() {
             const current = getCurrentMinuteKey(selectedMarket);
             const now = new Date();
             const minuteKey = now.toISOString().slice(0, 16);
-
-            // If we already have a pre-fetched signal for this candle, use it
-            if (prefetchedSignal && prefetchedMinuteKey === current.key) {
-                prefetchedSignal.minuteKey = minuteKey;
-                lockedSignal = prefetchedSignal;
-                lockedMinuteKey = current.key;
-                prefetchedSignal = null;
-                prefetchedMinuteKey = '';
-                displayLockedSignal();
-                sendSignalNotification(lockedSignal);
-                storeSignalToHistory(lockedSignal, null, null, lockedSignal.mtgLevel || 0);
-                return;
-            }
 
             // Lock minute key immediately
             lockedMinuteKey = current.key;
@@ -2230,11 +2174,6 @@
             const now = new Date();
             const secondsLeft = 59 - now.getSeconds();
             countdownEl.textContent = `00:${String(secondsLeft).padStart(2, '0')}`;
-
-            // At ~55 seconds, pre-fetch next signal
-            if (secondsLeft === 5) {
-                prefetchNextSignal();
-            }
         }
 
         // ===== MARKET HOURS DETECTION =====
@@ -2471,11 +2410,6 @@
                     countdownEl.textContent = `00:${String(secondsLeft).padStart(2, '0')}`;
                 }
             }
-
-            // Pre-fetch at 5 seconds remaining
-            if (secondsLeft === 5 && !prefetchedSignal) {
-                prefetchNextSignal();
-            }
         }
 
         // Build signal display with countdown
@@ -2590,8 +2524,6 @@
             // Reset signal lock for new market and fetch fresh
             lockedSignal = null;
             lockedMinuteKey = '';
-            prefetchedSignal = null;
-            prefetchedMinuteKey = '';
             isTransitioning = false;
             lastClosedSignal = null;
             lastEntryPrice = null;
